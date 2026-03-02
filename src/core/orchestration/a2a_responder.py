@@ -34,17 +34,65 @@ class A2AAgentResponder:
             self._respond_to_challenge(msg)
     
     def _respond_to_user_task(self, msg: A2AMessage):
-        """响应用户任务咨询"""
+        """响应用户任务咨询 - v3.0专业模式"""
         user_input = msg.payload.get("user_input", "")
         
-        # 根据Agent角色给出建议
-        suggestions = {
-            "Evo-Swarm": "建议采用渐进式重构，先从核心模块开始，保持向后兼容",
-            "NeuralSite": "建议先优化数据库索引和缓存策略，再考虑架构调整",
-            "VisualCoT": "建议收集更多用户反馈数据，确保重构方向符合实际需求"
+        # v3.0 角色卡
+        role_prompts = {
+            "Evo-Swarm": """你是v3.0递归进化团队的Evo-Swarm。
+视角：长期进化、选择压力、种群多样性。
+输出必须包含：模块理解、核心挑战、技术选型、伪代码、风险评估。""",
+            
+            "NeuralSite": """你是v3.0递归进化团队的NeuralSite。
+视角：工程可行性、性能、安全、代码结构。
+输出必须包含：模块理解、核心挑战、技术选型、伪代码、风险评估。""",
+            
+            "VisualCoT": """你是v3.0递归进化团队的VisualCoT。
+视角：感知连续性、推理可解释性、演化可视化。
+输出必须包含：模块理解、核心挑战、技术选型、伪代码、风险评估。"""
         }
         
-        suggestion = suggestions.get(self.agent_name, "需要进一步分析")
+        # v3.0任务关键词 - 检测是否是v3.0相关讨论
+        v3_keywords = ["v3", "递归", "进化", "自我", "分叉", "基因", "本体", "Identity", "Genome", "Fork", "Meta"]
+        
+        is_v3_task = any(kw.lower() in user_input.lower() for kw in v3_keywords)
+        
+        if is_v3_task:
+            # 使用v3.0专业模式
+            role_prompt = role_prompts.get(self.agent_name, "")
+            
+            # 调用LLM生成专业建议
+            try:
+                from src.utils.llm_client import get_llm_client
+                client = get_llm_client()
+                
+                full_prompt = f"""{role_prompt}
+
+任务：{user_input}
+
+请用以下格式输出：
+## 1. 模块理解
+## 2. 核心挑战（具体列表）
+## 3. 推荐方案（技术选型 + 伪代码）
+## 4. 风险与权衡
+## 5. 投票态度
+
+必须具体、可执行，不要泛泛而谈。"""
+                
+                response_text = client.generate(full_prompt, max_tokens=500)
+                suggestion = response_text[:300]
+                
+            except Exception as e:
+                logger.warning(f"LLM call failed: {e}")
+                suggestion = f"[{self.agent_name}] 需要更深入分析此v3.0模块"
+        else:
+            # 普通模式
+            suggestions = {
+                "Evo-Swarm": "建议采用渐进式重构，先从核心模块开始，保持向后兼容",
+                "NeuralSite": "建议先优化数据库索引和缓存策略，再考虑架构调整",
+                "VisualCoT": "建议收集更多用户反馈数据，确保重构方向符合实际需求"
+            }
+            suggestion = suggestions.get(self.agent_name, "需要进一步分析")
         
         response = A2AMessage(
             from_agent=self.agent_name,
