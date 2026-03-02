@@ -362,7 +362,7 @@ class SupervisorAgent:
             bus = get_a2a_bus()
             task_id = f"user-task-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
             
-            # 收集响应
+            # 注册Agent响应
             responses = []
             
             def on_response(msg):
@@ -388,16 +388,16 @@ class SupervisorAgent:
             )
             bus._publish(msg)
             
-            # 等待响应
-            import asyncio
-            await asyncio.sleep(5)
+            # 简单等待
+            import time
+            time.sleep(3)
             
             if not responses:
                 return None
             
             # 生成集体响应
             collective_suggestions = "\n".join([
-                f"- {r['agent']}: {r['content'][:80]}..."
+                f"- {r['agent']}: {r['content'][:60]}..."
                 for r in responses[:3]
             ])
             
@@ -409,9 +409,9 @@ class SupervisorAgent:
                 "results": [],
                 "type": "collective_consultation",
                 "consultation": {
-                    "summary": f"经过内部讨论，收集到 {len(responses)} 条建议",
+                    "summary": f"经过内部团队讨论，收集到 {len(responses)} 条建议",
                     "suggestions": collective_suggestions,
-                    "response": f"关于「{user_input[:30]}...」，我与团队讨论后建议：{responses[0].get('content', '需要进一步分析')[:100]}"
+                    "response": f"关于「{user_input[:20]}」，团队建议：{responses[0].get('content', '需要进一步分析')[:80]}"
                 }
             }
             
