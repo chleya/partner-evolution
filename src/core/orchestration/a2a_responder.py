@@ -79,7 +79,7 @@ class A2AAgentResponder:
         
         if candidates:
             # 选最高分的
-            candidates.sort(reverse=True)
+            candidates.sort(key=lambda x: x[0], reverse=True)
             selected = candidates[0][1]
             return {"content": selected.get("content"), "confidence": selected.get("confidence")}
         

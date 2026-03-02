@@ -365,14 +365,14 @@ reasoning: <推理链>
         # 打印会议摘要
         if responses:
             logger.info("""
-╔══════════════════════════════════════╗
-║     集体自省会议纪要                 ║
-╚══════════════════════════════════════╝""")
+============================================
+     COLLECTIVE SELF-REFLECTION MEETING
+============================================""")
             
             agent_views = {
-                "Evo-Swarm": "学习/进化视角",
-                "NeuralSite": "效率/架构视角", 
-                "VisualCoT": "感知/记忆视角"
+                "Evo-Swarm": "Learning/Evolve",
+                "NeuralSite": "Efficiency/Architecture", 
+                "VisualCoT": "Perception/Memory"
             }
             
             for r in responses:
@@ -380,11 +380,11 @@ reasoning: <推理链>
                 view = agent_views.get(agent, "")
                 content = r.get("content", "")[:40]
                 conf = r.get("confidence", 0)
-                logger.info(f"  • {agent}（{view}）: {content}... (conf:{conf})")
+                logger.info(f"  [{agent}] ({view}): {content}... (conf:{conf})")
             
             logger.info(f"""
-  最终共识: {belief.get('assertion', '')[:40]}... (conf:{belief.get('confidence')})
-═══════════════════════════════════════
+  Final Consensus: {belief.get('assertion', '')[:40]}... (conf:{belief.get('confidence')})
+============================================
             """)
         
         logger.info(f"Autonomous cycle completed: belief saved, goal={goal_created}")
