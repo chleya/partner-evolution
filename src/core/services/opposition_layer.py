@@ -203,7 +203,7 @@ class OppositionLayer:
             return True
         
         # 关键词冲突检测
-        negative_words = ["不", "别", "不要", "停止", "暂停", "忽略", "停", "关闭", "别再"]
+        negative_words = ["不", "别", "不要", "停止", "暂停", "忽略", "停", "关闭", "别再", "听", "编"]
         
         # 扩展positive_words - 包含多种价值观关键词
         positive_words = ["要", "需要", "应该", "必须", "持续", "优化", "保持", "维护", 
