@@ -235,6 +235,29 @@ CREATE INDEX IF NOT EXISTS goal_priority_idx ON autonomous_goals (priority);
 CREATE INDEX IF NOT EXISTS goal_type_idx ON autonomous_goals (goal_type);
 CREATE INDEX IF NOT EXISTS goal_horizon_idx ON autonomous_goals (horizon);
 
+-- =====================================================
+-- v2.2 反对记录表
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS oppositions (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    user_input TEXT NOT NULL,
+    opposing_belief_id VARCHAR(100),
+    belief_content TEXT NOT NULL,
+    belief_confidence NUMERIC(5,4),
+    severity VARCHAR(32) NOT NULL CHECK (severity IN ('gentle', 'strong')),
+    response_text TEXT,
+    user_resolution VARCHAR(64) CHECK (user_resolution IN ('persisted', 'adjusted', 'ignored', 'discussed', 'overridden', 'pending')),
+    trace_id TEXT,
+    user_id VARCHAR(64) DEFAULT 'default_user',
+    metadata JSONB DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS oppositions_created_idx ON oppositions(created_at DESC);
+CREATE INDEX IF NOT EXISTS oppositions_belief_idx ON oppositions(opposing_belief_id);
+CREATE INDEX IF NOT EXISTS oppositions_severity_idx ON oppositions(severity);
+
 -- 版本历史表（v3.0递归进化准备）
 CREATE TABLE IF NOT EXISTS version_history (
     id VARCHAR(100) PRIMARY KEY,

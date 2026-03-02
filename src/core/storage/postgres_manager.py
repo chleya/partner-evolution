@@ -396,6 +396,37 @@ class StorageManager:
         if status:
             return self.json_fallback.query("goals", lambda x: x.get("status") == status)
         return self.json_fallback.load("goals")
+    
+    # ============== 反对记录操作 ==============
+    
+    def save_opposition(self, opposition: Dict) -> bool:
+        """保存反对记录"""
+        if self.use_db:
+            query = """
+                INSERT INTO oppositions 
+                (user_input, opposing_belief_id, belief_content, belief_confidence, severity, response_text, user_resolution, trace_id, user_id, metadata)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            return self.db.execute_write(query, (
+                opposition.get("user_input", ""),
+                opposition.get("opposing_belief_id"),
+                opposition.get("belief_content", ""),
+                opposition.get("belief_confidence", 0),
+                opposition.get("severity", "gentle"),
+                opposition.get("response_text", ""),
+                opposition.get("user_resolution", "pending"),
+                opposition.get("trace_id"),
+                opposition.get("user_id", "default_user"),
+                json.dumps(opposition.get("metadata", {}))
+            ))
+        return self.json_fallback.append("oppositions", opposition)
+    
+    def get_oppositions(self, limit: int = 10) -> List[Dict]:
+        """获取反对记录"""
+        if self.use_db:
+            query = "SELECT * FROM oppositions ORDER BY created_at DESC LIMIT %s"
+            return self.db.execute(query, (limit,))
+        return self.json_fallback.load("oppositions")[-limit:]
 
 
 # 全局实例

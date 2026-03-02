@@ -96,6 +96,18 @@ class OppositionLayer:
         # 5. 记录反对日志
         self._log_opposition(user_input, conflicting_belief, severity)
         
+        # 6. 保存反对记录
+        suggested_response = self._generate_response(
+            user_input, 
+            conflicting_belief, 
+            severity
+        )
+        
+        self.save_opposition_record(user_input, {
+            "opposing_belief": conflicting_belief,
+            "severity": severity
+        }, suggested_response)
+        
         return {
             "conflict": True,
             "opposing_belief": conflicting_belief,
@@ -221,6 +233,23 @@ class OppositionLayer:
             f"belief={belief.get('content', '')[:50]}..., "
             f"user_input={user_input[:30]}..."
         )
+    
+    def save_opposition_record(self, user_input: str, check_result: Dict, response_text: str) -> bool:
+        """保存反对记录到存储"""
+        belief = check_result.get("opposing_belief", {})
+        
+        opposition_data = {
+            "user_input": user_input,
+            "opposing_belief_id": belief.get("id"),
+            "belief_content": belief.get("assertion", belief.get("content", "")),
+            "belief_confidence": belief.get("confidence", 0),
+            "severity": check_result.get("severity", "gentle"),
+            "response_text": response_text,
+            "user_resolution": "pending",
+            "trace_id": f"opposition-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        }
+        
+        return self.storage.save_opposition(opposition_data)
     
     def should_oppose(self, user_input: str) -> bool:
         """快速检查是否应该反对"""
