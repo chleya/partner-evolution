@@ -27,6 +27,69 @@ class PureAutonomousCycle:
         self.min_memories_required = 5
         self.judge_threshold = 0.65
         
+        # A2A总线
+        self._a2a_bus = None
+        self._collected_responses = []
+        
+    def _get_a2a_bus(self):
+        """获取A2A总线"""
+        if self._a2a_bus is None:
+            try:
+                from src.core.orchestration.a2a_bus import get_a2a_bus
+                self._a2a_bus = get_a2a_bus()
+            except Exception as e:
+                logger.warning(f"A2A Bus not available: {e}")
+        return self._a2a_bus
+    
+    def _broadcast_and_collect(self, task_id: str, wait_seconds: int = 10) -> List[Dict]:
+        """广播自省请求并收集响应"""
+        bus = self._get_a2a_bus()
+        
+        if not bus:
+            logger.info("A2A Bus not available, skipping collective reflection")
+            return []
+        
+        # 收集响应
+        collected = []
+        
+        def on_response(msg):
+            if msg.type in ["share_belief", "response"] and msg.task_id == task_id:
+                collected.append({
+                    "from_agent": msg.from_agent,
+                    "content": msg.payload.get("content", ""),
+                    "belief": msg.payload.get("belief", ""),
+                    "confidence": msg.payload.get("confidence", 0)
+                })
+                logger.info(f"Collected response from {msg.from_agent}")
+        
+        # 订阅收集响应
+        bus.subscribe("all", on_response)
+        
+        # 广播启动自省
+        logger.info(f"Broadcasting self-reflection request: {task_id}")
+        try:
+            from src.core.orchestration.a2a_bus import A2AMessage
+            msg = A2AMessage(
+                from_agent="AutonomousCycle",
+                to_agent="all",
+                type="start_self_reflection",
+                payload={
+                    "task_id": task_id,
+                    "trigger": "autonomous_cycle"
+                },
+                task_id=task_id
+            )
+            bus._publish(msg)
+        except Exception as e:
+            logger.warning(f"Failed to broadcast: {e}")
+        
+        # 等待响应
+        import time
+        time.sleep(wait_seconds)
+        
+        logger.info(f"Collected {len(collected)} responses from agents")
+        return collected
+    
     def is_user_active(self) -> bool:
         """检查用户是否活跃"""
         # 获取最近记忆的时间戳
@@ -248,8 +311,19 @@ reasoning: <推理链>
         
         logger.info("User inactive, proceeding with autonomous cycle...")
         
-        # 2. 收集上下文
+        # 2. A2A广播：启动集体自省
+        task_id = f"self-reflect-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        responses = self._broadcast_and_collect(task_id)
+        
+        # 3. 收集上下文
         context = self.collect_context()
+        
+        # 将收集到的响应加入上下文
+        if responses:
+            context += "\n\n[其他Agent的观点]:\n"
+            for resp in responses:
+                context += f"- {resp.get('from_agent')}: {resp.get('content', '')[:100]}\n"
+        
         if not context:
             return {
                 "status": "skipped",
@@ -257,7 +331,7 @@ reasoning: <推理链>
                 "message": "记忆不足，跳过"
             }
         
-        # 3. 生成主张
+        # 4. 生成主张
         belief = self.generate_belief(context)
         
         if not belief:
