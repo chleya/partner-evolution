@@ -160,31 +160,23 @@ class PureAutonomousCycle:
         if agent_responses and len(agent_responses) > 1:
             # 构建多视角输入
             views_text = "\n".join([
-                f"- {r.get('from_agent', 'Agent')}: {r.get('content', '')[:80]}... (conf:{r.get('confidence', 0)})"
+                f"- {r.get('from_agent', 'Agent')}: {r.get('content', '')[:60]}... (conf:{r.get('confidence', 0)})"
                 for r in agent_responses
             ])
             
-            prompt = f"""你是Partner-Evolution的集体智慧Judge。
+            prompt = f"""你现在是Partner-Evolution的集体自省最终Judge。
 
-以下是从不同视角分享的观点：
+以下是三个Agent从不同视角分享的信念：
 {views_text}
 
-任务：**综合这些观点，提炼出一个新的、更高级的洞见**。
+任务：
+1. 综合三方观点，提炼出一条**简洁有力、原创的更高阶洞见**（一句话，20-35字）
+2. 必须同时包含至少两个Agent的核心元素
+3. 语言自然、务实，避免重复词（如"持续性"）
+4. 给出具体可落地的建议方向
 
-要求：
-- 不要简单复述最强的一条
-- 必须融合至少两个视角的核心元素
-- 可以提升抽象层次或加入新约束
-- 一句清晰的断言/主张
-- 置信度 (0.0-1.0)：考虑一致性与创新性
-- 立场: positive/negative/neutral/exploratory
-- 简短推理链
-
-输出格式：
-assertion: <融合后的新主张>
-confidence: <0.0-1.0>
-stance: <positive/negative/neutral/exploratory>
-reasoning: <推理链>
+输出严格JSON：
+{{"assertion": "一句话信念", "confidence": 0.xx, "reasoning": "融合说明"}}
 """
         else:
             # 单一视角或无响应，使用原有提示
@@ -221,8 +213,30 @@ reasoning: <推理链>
         return self._generate_simple_belief(context)
     
     def _parse_llm_response(self, response: str) -> Optional[Dict]:
-        """解析LLM响应"""
+        """解析LLM响应 - 支持JSON和文本格式"""
         try:
+            # 首先尝试JSON解析
+            import json
+            # 尝试提取JSON
+            if "{" in response and "}" in response:
+                try:
+                    # 提取JSON部分
+                    start = response.find("{")
+                    end = response.rfind("}") + 1
+                    json_str = response[start:end]
+                    data = json.loads(json_str)
+                    
+                    if "assertion" in data and "confidence" in data:
+                        return {
+                            "assertion": data.get("assertion", ""),
+                            "confidence": float(data.get("confidence", 0.5)),
+                            "stance": data.get("stance", "neutral"),
+                            "reasoning": data.get("reasoning", "")
+                        }
+                except:
+                    pass
+            
+            # 回退到文本解析
             lines = response.strip().split("\n")
             belief = {}
             
