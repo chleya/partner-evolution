@@ -54,6 +54,16 @@ class HeartbeatService:
         schedule.every(self.config["thinking_interval_hours"]).hours.do(
             self._hourly_thinking
         )
+        
+        # 每天凌晨3点执行自主循环（无人时自省生成主张）
+        schedule.every().day.at("03:00").do(
+            self._autonomous_cycle
+        )
+        
+        # 每12小时也检查一次（更频繁的自主循环）
+        schedule.every(12).hours.do(
+            self._autonomous_cycle
+        )
 
     def register_task(self, name: str, task_func: Callable, interval: str = "daily"):
         """注册自定义任务"""
@@ -139,6 +149,52 @@ class HeartbeatService:
                 self.task_results["hourly_thinking"] = result
                 return result
         return None
+
+    def _autonomous_cycle(self):
+        """自主反思循环 - 无人时自省生成独立主张"""
+        self.logger.info("Executing autonomous cycle (Pure Autonomous Cycle)...")
+        
+        try:
+            # 导入自主循环模块
+            from src.core.services.autonomous_cycle import run_autonomous_cycle
+            
+            # 运行自主循环
+            result = run_autonomous_cycle()
+            
+            # 记录结果
+            self.task_results["autonomous_cycle"] = {
+                "type": "autonomous_cycle",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "status": result.get("status"),
+                "message": result.get("message"),
+                "belief_created": result.get("status") == "success"
+            }
+            
+            # 如果成功生成belief，记录日志
+            if result.get("status") == "success":
+                belief = result.get("belief", {})
+                self.logger.info(
+                    f"Autonomous cycle completed: new belief created - "
+                    f"'{belief.get('assertion', 'N/A')[:50]}...' "
+                    f"(confidence: {belief.get('confidence')})"
+                )
+            else:
+                self.logger.info(
+                    f"Autonomous cycle skipped: {result.get('reason')} - "
+                    f"{result.get('message')}"
+                )
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Autonomous cycle failed: {e}")
+            self.task_results["autonomous_cycle"] = {
+                "type": "autonomous_cycle",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "status": "error",
+                "error": str(e)
+            }
+            return None
 
     def run_task(self, task_name: str) -> Any:
         """手动运行任务"""
