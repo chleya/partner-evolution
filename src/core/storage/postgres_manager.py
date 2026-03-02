@@ -183,6 +183,10 @@ class StorageManager:
     def __init__(self, config: DBConfig = None):
         self.config = config
         
+        # 查询缓存
+        self._memory_cache: Dict[str, tuple] = {}
+        self._cache_ttl = 60  # 60秒缓存
+        
         # 自动探测PostgreSQL连接（自动降级）
         self.use_db = False
         self.db = None
@@ -193,6 +197,8 @@ class StorageManager:
                 self.db = PostgresManager(config)
                 if self.db.is_connected():
                     self.use_db = True
+                    # 创建索引优化
+                    self._ensure_indexes()
                     logger.info("PostgreSQL connected, using DB storage")
                 else:
                     logger.warning("PostgreSQL connection failed, using JSON fallback")
@@ -208,9 +214,28 @@ class StorageManager:
         
         # 记录启动日志
         if self.use_db:
-            logger.info("Storage: PostgreSQL mode")
+            logger.info("Storage: PostgreSQL mode (optimized with indexes)")
         else:
             logger.info("Storage: JSON fallback mode")
+    
+    def _ensure_indexes(self):
+        """确保数据库索引存在"""
+        if not self.use_db:
+            return
+        try:
+            # 记忆表索引
+            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_memories_tier ON memories(tier)")
+            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(memory_type)")
+            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at DESC)")
+            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_memories_conf ON memories(confidence DESC)")
+            
+            # 信念表索引
+            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_beliefs_conf ON beliefs(confidence DESC)")
+            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_beliefs_status ON beliefs(status)")
+            
+            logger.info("Database indexes optimized")
+        except Exception as e:
+            logger.warning(f"Index creation failed: {e}")
     
     # ============== 记忆操作 ==============
     
@@ -228,20 +253,57 @@ class StorageManager:
         return data[0] if data else None
     
     def get_memories_by_tier(self, tier: str, limit: int = 100) -> List[Dict]:
-        """按层级获取记忆"""
+        """按层级获取记忆（带缓存）"""
+        import time
+        cache_key = f"tier_{tier}_{limit}"
+        now = time.time()
+        
+        # 检查缓存
+        if hasattr(self, '_memory_cache'):
+            if cache_key in self._memory_cache:
+                cached_time, cached_data = self._memory_cache[cache_key]
+                if now - cached_time < self._cache_ttl:
+                    return cached_data[:limit]
+        
+        # 获取数据
         if self.use_db:
-            return self._get_memories_by_tier_db(tier, limit)
-        data = self.json_fallback.query("memories", lambda x: x.get("tier") == tier)
-        return data[:limit]
+            result = self._get_memories_by_tier_db(tier, limit)
+        else:
+            data = self.json_fallback.query("memories", lambda x: x.get("tier") == tier)
+            result = data[:limit]
+        
+        # 更新缓存
+        if hasattr(self, '_memory_cache'):
+            self._memory_cache[cache_key] = (now, result)
+        
+        return result
     
     def search_memories(self, query: str, limit: int = 10) -> List[Dict]:
-        """搜索记忆"""
+        """搜索记忆（带缓存）"""
+        import time
+        cache_key = f"search_{query}_{limit}"
+        now = time.time()
+        
+        # 检查缓存
+        if hasattr(self, '_memory_cache'):
+            if cache_key in self._memory_cache:
+                cached_time, cached_data = self._memory_cache[cache_key]
+                if now - cached_time < self._cache_ttl:
+                    return cached_data[:limit]
+        
+        # 获取数据
         if self.use_db:
-            return self._search_memories_db(query, limit)
-        # JSON简单搜索
-        data = self.json_fallback.query("memories", 
-            lambda x: query.lower() in x.get("content", "").lower())
-        return data[:limit]
+            result = self._search_memories_db(query, limit)
+        else:
+            data = self.json_fallback.query("memories", 
+                lambda x: query.lower() in x.get("content", "").lower())
+            result = data[:limit]
+        
+        # 更新缓存
+        if hasattr(self, '_memory_cache'):
+            self._memory_cache[cache_key] = (now, result)
+        
+        return result
     
     def delete_memory(self, memory_id: str) -> bool:
         """删除记忆"""
