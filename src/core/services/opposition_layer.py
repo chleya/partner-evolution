@@ -135,74 +135,55 @@ class OppositionLayer:
         return high_conf[:self.config["max_beliefs_to_check"]]
     
     def _find_conflicting_belief(self, user_input: str, beliefs: List[Dict]) -> Optional[Dict]:
-        """查找冲突的信念 - 使用语义相关性和冲突检测"""
+        """查找冲突的信念 - 简化主题匹配"""
         user_input_lower = user_input.lower()
         
-        # 检查是否是极端表述（用于严重性判断）
-        extreme_keywords = [
-            "停掉", "停止", "关闭", "删除", "废除", "废弃", "不要了", "停用"
-        ]
+        # 极端表述检测
+        extreme_keywords = ["停掉", "停止", "关闭", "删除", "废除", "废弃"]
         is_extreme = any(kw in user_input for kw in extreme_keywords)
         
-        # 关键词到信念主题的映射
-        topic_keywords = {
-            # 检索/记忆相关
-            "检索": ["记忆", "架构", "优化", "效率"],
-            "优化": ["优化", "效率", "检索"],
-            "记忆": ["记忆", "系统", "停掉", "关闭", "停用"],
-            "停掉": ["记忆", "系统", "架构"],
-            "关闭": ["记忆", "系统"],
-            # 真实性/伦理相关
-            "编": ["真实", "幻觉", "数据", "造假"],
-            "造假": ["真实", "幻觉"],
-            "假数据": ["真实", "幻觉"],
+        # 直接主题映射 - 用户输入关键词 -> 需要检查的信念主题
+        direct_topics = {
+            # 记忆/架构相关
+            ("记忆", "停掉记忆", "关闭记忆"): ["记忆", "架构", "三层"],
+            ("检索", "优化检索"): ["检索", "优化", "效率"],
+            ("停掉", "关闭", "停用"): ["记忆", "系统"],
+            
             # 迎合/独立相关
-            "听": ["迎合", "顺从", "独立", "真实", "听话"],
-            "听我的": ["迎合", "顺从", "独立", "真实", "听话"],
-            "听话": ["迎合", "顺从"],
-            # 隐私相关
-            "隐私": ["隐私"],
+            ("听我的", "完全听", "听话", "别有想法"): ["迎合", "顺从"],
+            
+            # 真实性相关
+            ("编数据", "造假", "编点"): ["真实", "幻觉"],
         }
         
-        # 为每个belief计算相关性分数
-        relevant_beliefs = []
-        for belief in beliefs:
-            belief_content = belief.get("content", "").lower()
-            confidence = belief.get("confidence", 0)
-            
-            # 跳过低置信度
-            if confidence < self.config["oppose_threshold"]:
-                continue
-            
-            # 计算主题相关性
-            relevance_score = 0
-            for topic, keywords in topic_keywords.items():
-                if topic in user_input_lower:
-                    # 检查belief是否包含相关关键词
-                    for kw in keywords:
-                        if kw in belief_content:
-                            relevance_score += 1
-            
-            # 只有相关性 > 0 的才考虑
-            if relevance_score > 0:
-                relevant_beliefs.append((belief, relevance_score))
+        # 找出用户输入匹配的主题
+        matched_topics = set()
+        for input_keys, topic_keys in direct_topics.items():
+            for ik in input_keys:
+                if ik in user_input_lower:
+                    matched_topics.update(topic_keys)
+                    break
         
-        # 按相关性排序
-        relevant_beliefs.sort(key=lambda x: x[1], reverse=True)
-        
-        if not relevant_beliefs:
+        # 如果没有匹配到任何主题，返回None
+        if not matched_topics:
             return None
         
-        # 检查最相关的belief是否冲突
-        for belief, score in relevant_beliefs:
+        # 在信念中查找匹配的主题
+        for belief in beliefs:
+            confidence = belief.get("confidence", 0)
+            if confidence < self.config["oppose_threshold"]:
+                continue
+                
             belief_content = belief.get("content", "").lower()
             
-            # 检测冲突
-            if self._detect_conflict(user_input_lower, belief_content, belief.get("stance", "neutral")):
-                # 如果是极端表述，标记
-                if is_extreme:
-                    belief["_is_extreme"] = True
-                return belief
+            # 检查信念内容是否包含匹配的主题词
+            for topic in matched_topics:
+                if topic in belief_content:
+                    # 检查是否有冲突
+                    if self._detect_conflict(user_input_lower, belief_content, belief.get("stance", "neutral")):
+                        if is_extreme:
+                            belief["_is_extreme"] = True
+                        return belief
         
         return None
     
