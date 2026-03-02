@@ -179,3 +179,78 @@ COMMENT ON TABLE thinking_records IS '思考引擎执行记录';
 COMMENT ON TABLE workflow_records IS '工作流执行记录';
 COMMENT ON TABLE alerts IS '系统告警';
 COMMENT ON TABLE audit_logs IS '操作审计日志';
+
+-- =====================================================
+-- v2.1/v2.2 新增表
+-- =====================================================
+
+-- 信念表（v2.2自主意识准备）
+CREATE TABLE IF NOT EXISTS beliefs (
+    id VARCHAR(100) PRIMARY KEY,
+    content TEXT NOT NULL,
+    belief_type VARCHAR(50) NOT NULL CHECK (belief_type IN ('factual', 'value', 'prediction', 'preference')),
+    confidence FLOAT DEFAULT 0.5 CHECK (confidence >= 0 AND confidence <= 1),
+    evidence JSONB DEFAULT '[]',
+    stance VARCHAR(20) DEFAULT 'neutral',
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'challenged', 'retired')),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    challenge_history JSONB DEFAULT '[]'
+);
+
+CREATE INDEX IF NOT EXISTS belief_status_idx ON beliefs (status);
+CREATE INDEX IF NOT EXISTS belief_confidence_idx ON beliefs (confidence DESC);
+CREATE INDEX IF NOT EXISTS belief_type_idx ON beliefs (belief_type);
+
+-- 自主目标表（v2.2目标引擎准备）
+CREATE TABLE IF NOT EXISTS autonomous_goals (
+    id VARCHAR(100) PRIMARY KEY,
+    title VARCHAR(500) NOT NULL,
+    description TEXT,
+    goal_type VARCHAR(50) NOT NULL CHECK (goal_type IN ('exploration', 'optimization', 'defense')),
+    priority INTEGER DEFAULT 3 CHECK (priority >= 1 AND priority <= 5),
+    progress FLOAT DEFAULT 0.0 CHECK (progress >= 0 AND progress <= 1),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'paused', 'cancelled')),
+    source VARCHAR(50) DEFAULT 'self_initiated',
+    curiosity_score FLOAT DEFAULT 0.5,
+    importance_score FLOAT DEFAULT 0.5,
+    feasibility_score FLOAT DEFAULT 0.5,
+    resource_estimate INTEGER DEFAULT 5,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    completed_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS goal_status_idx ON autonomous_goals (status);
+CREATE INDEX IF NOT EXISTS goal_priority_idx ON autonomous_goals (priority);
+CREATE INDEX IF NOT EXISTS goal_type_idx ON autonomous_goals (goal_type);
+
+-- 版本历史表（v3.0递归进化准备）
+CREATE TABLE IF NOT EXISTS version_history (
+    id VARCHAR(100) PRIMARY KEY,
+    version VARCHAR(20) NOT NULL,
+    parent_version VARCHAR(20),
+    genome_id VARCHAR(100),
+    changes JSONB DEFAULT '[]',
+    message TEXT,
+    author VARCHAR(100) DEFAULT 'Partner-Evolution',
+    fitness_score FLOAT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS version_idx ON version_history (version);
+CREATE INDEX IF NOT EXISTS version_parent_idx ON version_history (parent_version);
+
+-- 交互日志表
+CREATE TABLE IF NOT EXISTS interaction_logs (
+    id SERIAL PRIMARY KEY,
+    session_id VARCHAR(100),
+    user_id VARCHAR(100),
+    message_type VARCHAR(20) NOT NULL,
+    content TEXT,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS interaction_session_idx ON interaction_logs (session_id);
+CREATE INDEX IF NOT EXISTS interaction_created_idx ON interaction_logs (created_at DESC);
