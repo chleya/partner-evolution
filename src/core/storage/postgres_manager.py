@@ -383,7 +383,8 @@ class StorageManager:
         if self.use_db:
             query = "SELECT * FROM beliefs WHERE status = %s ORDER BY confidence DESC"
             return self.db.execute(query, (status,))
-        return self.json_fallback.query("beliefs", lambda x: x.get("status") == status)
+        # JSON模式: 过滤status为active的，或没有status字段的(兼容旧数据)
+        return self.json_fallback.query("beliefs", lambda x: x.get("status") == status or "status" not in x)
     
     # ============== 自主目标操作 (v2.2准备) ==============
     
