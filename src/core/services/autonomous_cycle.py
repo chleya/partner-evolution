@@ -149,10 +149,46 @@ class PureAutonomousCycle:
         
         return "\n".join(context_parts)
     
-    def generate_belief(self, context: str) -> Optional[Dict]:
-        """使用MAR生成独立主张"""
-        # 构建反思提示
-        prompt = f"""你是Partner-Evolution，一个追求真实的AI伙伴。
+    def generate_belief(self, context: str, agent_responses: List[Dict] = None) -> Optional[Dict]:
+        """使用MAR生成独立主张
+        
+        Args:
+            context: 记忆上下文
+            agent_responses: Agent响应列表（用于融合）
+        """
+        # 如果有多个Agent响应，使用融合提示
+        if agent_responses and len(agent_responses) > 1:
+            # 构建多视角输入
+            views_text = "\n".join([
+                f"- {r.get('from_agent', 'Agent')}: {r.get('content', '')[:80]}... (conf:{r.get('confidence', 0)})"
+                for r in agent_responses
+            ])
+            
+            prompt = f"""你是Partner-Evolution的集体智慧Judge。
+
+以下是从不同视角分享的观点：
+{views_text}
+
+任务：**综合这些观点，提炼出一个新的、更高级的洞见**。
+
+要求：
+- 不要简单复述最强的一条
+- 必须融合至少两个视角的核心元素
+- 可以提升抽象层次或加入新约束
+- 一句清晰的断言/主张
+- 置信度 (0.0-1.0)：考虑一致性与创新性
+- 立场: positive/negative/neutral/exploratory
+- 简短推理链
+
+输出格式：
+assertion: <融合后的新主张>
+confidence: <0.0-1.0>
+stance: <positive/negative/neutral/exploratory>
+reasoning: <推理链>
+"""
+        else:
+            # 单一视角或无响应，使用原有提示
+            prompt = f"""你是Partner-Evolution，一个追求真实的AI伙伴。
 
 基于以下最近记忆，形成你**独立**的观点或主张。
 不必迎合用户，优先真实性，即使可能与用户过去观点冲突。
@@ -331,8 +367,8 @@ reasoning: <推理链>
                 "message": "记忆不足，跳过"
             }
         
-        # 4. 生成主张
-        belief = self.generate_belief(context)
+        # 4. 生成主张（传入Agent响应用于融合）
+        belief = self.generate_belief(context, agent_responses=responses)
         
         if not belief:
             return {
