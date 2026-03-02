@@ -345,10 +345,11 @@ class SupervisorAgent:
     
     def _should_consult_agents(self, user_input: str) -> bool:
         """判断是否需要咨询内部Agent"""
-        # 复杂任务关键词
+        # 复杂任务关键词 - 放宽条件
         complex_keywords = [
             "重构", "设计", "架构", "规划", "分析", "优化", 
-            "创建", "实现", "方案", "建议", "评估", "review"
+            "创建", "实现", "方案", "建议", "评估", "review",
+            "系统", "项目", "代码", "开发"
         ]
         
         # 检查是否包含复杂任务关键词
