@@ -115,5 +115,20 @@
       "reasoning": "NeuralSite强调记忆架构的效率，VisualCoT将记忆提升到人格载体高度，Evo-Swarm则指出持续学习比一次性优化更关键。三者融合后形成新视角：记忆不仅是技术架构，更是人格连续性的动态基础设施——既要通过持续学习实现渐进演化（Evo-Swarm），又要在演化中保持自我同一性（VisualCoT），同时需要高效的检索与遗忘管理（NeuralSite）。这一洞见超越了",
       "generated_by": "PureAutonomousCycle"
     }
+  },
+  {
+    "id": "belief_20260302095304",
+    "content": "记忆是人格的动态骨架——架构奠基、演化赋活，持续学习让自我在时间中迭代生长",
+    "type": "reflection",
+    "confidence": 0.82,
+    "stance": "neutral",
+    "source_type": "self_reflection",
+    "source_id": "autonomous-cycle-2026-03-02T09:53:04.224818+00:00",
+    "version": 1,
+    "status": "active",
+    "metadata": {
+      "reasoning": "融合NeuralSite的架构维度、Evo-Swarm的演化与持续学习视角、VisualCoT的自我连续性主张，提出'动态骨架'这一原创隐喻。区别于三方静态描述，强调记忆既是结构化的基础设施（体），又是持续演化的生命过程（用），最终指向'迭代生长'这一务实目标。",
+      "generated_by": "PureAutonomousCycle"
+    }
   }
 ]

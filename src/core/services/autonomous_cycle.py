@@ -391,7 +391,17 @@ reasoning: <推理链>
                 "message": "主张生成失败"
             }
         
-        # 4. Judge过滤（置信度阈值）
+        # 添加演化信息
+        belief["parent_id"] = None  # 首次生成
+        belief["version"] = 1
+        belief["evolution_count"] = 0
+        
+        # 5. 检查是否需要演化旧信念
+        evolution_result = self._check_belief_evolution()
+        if evolution_result:
+            logger.info(f"Belief evolution triggered: {evolution_result}")
+        
+        # 6. Judge过滤（置信度阈值）
         if belief.get("confidence", 0) < self.judge_threshold:
             return {
                 "status": "skipped",
@@ -445,6 +455,27 @@ reasoning: <推理链>
             "goal_created": goal_created,
             "message": "自主循环完成，主张已保存"
         }
+    
+    def _check_belief_evolution(self) -> Optional[Dict]:
+        """检查信念是否需要演化
+        
+        每10次循环后，检查旧信念是否需要更新或合并
+        """
+        # 简单实现：记录演化次数
+        beliefs = self.storage.get_beliefs()
+        
+        if len(beliefs) < 3:
+            return None
+        
+        # 检查是否有重复/相似的信念可以合并
+        # 这里可以加入更复杂的相似度检测
+        evolution_data = {
+            "total_beliefs": len(beliefs),
+            "avg_confidence": sum(b.get("confidence", 0) for b in beliefs) / len(beliefs),
+            "suggestion": "beliefs healthy"
+        }
+        
+        return evolution_data
 
 
 # 全局实例

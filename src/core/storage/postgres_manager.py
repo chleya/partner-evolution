@@ -331,9 +331,13 @@ class StorageManager:
     # ============== 信念操作 (v2.2准备) ==============
     
     def save_belief(self, belief: Dict) -> bool:
-        """保存信念（带去重）"""
+        """保存信念（带去重和演化支持）"""
         content = belief.get("content", "")
         new_confidence = belief.get("confidence", 0.5)
+        
+        # 获取演化字段
+        parent_id = belief.get("parent_id")
+        version = belief.get("version", 1)
         
         # JSON模式下的去重检查
         if not self.use_db:
@@ -345,18 +349,23 @@ class StorageManager:
                 if new_confidence > old_confidence:
                     existing_belief["confidence"] = new_confidence
                     existing_belief["updated_at"] = datetime.now().isoformat()
+                    existing_belief["version"] = existing_belief.get("version", 1) + 1
                 return True  # 已存在，不重复添加
         
         # PostgreSQL模式
         if self.use_db:
             # 先检查是否存在相似内容
-            check_query = "SELECT id, confidence FROM beliefs WHERE content = %s AND status = 'active'"
+            check_query = "SELECT id, confidence, version FROM beliefs WHERE content = %s AND status = 'active'"
             existing = self.db.execute(check_query, (content,))
             
             if existing and len(existing) > 0:
                 # 存在，取更高的confidence
                 old_confidence = existing[0].get("confidence", 0)
                 if new_confidence > old_confidence:
+                    old_version = existing[0].get("version", 1)
+                    update_query = "UPDATE beliefs SET confidence = %s, updated_at = NOW(), version = %s WHERE id = %s"
+                    self.db.execute_write(update_query, (new_confidence, old_version + 1, existing[0].get("id")))
+                return True  # 已存在，不重复插入
                     update_query = "UPDATE beliefs SET confidence = %s, updated_at = NOW() WHERE id = %s"
                     self.db.execute_write(update_query, (new_confidence, existing[0].get("id")))
                 return True  # 已存在，不重复插入
