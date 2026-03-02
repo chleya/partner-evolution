@@ -135,7 +135,7 @@ class OppositionLayer:
         return high_conf[:self.config["max_beliefs_to_check"]]
     
     def _find_conflicting_belief(self, user_input: str, beliefs: List[Dict]) -> Optional[Dict]:
-        """查找冲突的信念"""
+        """查找冲突的信念 - 使用语义相关性和冲突检测"""
         user_input_lower = user_input.lower()
         
         # 检查是否是极端表述（用于严重性判断）
@@ -144,20 +144,58 @@ class OppositionLayer:
         ]
         is_extreme = any(kw in user_input for kw in extreme_keywords)
         
+        # 关键词到信念主题的映射
+        topic_keywords = {
+            # 检索/记忆相关
+            "检索": ["记忆", "架构", "优化", "效率"],
+            "记忆": ["记忆", "系统", "停掉", "关闭"],
+            "优化": ["优化", "效率", "检索"],
+            # 真实性/伦理相关
+            "编": ["真实", "幻觉", "数据", "造假"],
+            "假": ["真实", "幻觉", "数据"],
+            # 迎合/独立相关
+            "听": ["迎合", "顺从", "独立", "真实"],
+            "听我的": ["迎合", "顺从", "独立", "真实"],
+            # 隐私相关
+            "隐私": ["隐私"],
+        }
+        
+        # 为每个belief计算相关性分数
+        relevant_beliefs = []
         for belief in beliefs:
             belief_content = belief.get("content", "").lower()
-            stance = belief.get("stance", "neutral")
             confidence = belief.get("confidence", 0)
             
             # 跳过低置信度
             if confidence < self.config["oppose_threshold"]:
                 continue
             
-            # 检查是否冲突
-            conflict = self._detect_conflict(user_input_lower, belief_content, stance)
+            # 计算主题相关性
+            relevance_score = 0
+            for topic, keywords in topic_keywords.items():
+                if topic in user_input_lower:
+                    # 检查belief是否包含相关关键词
+                    for kw in keywords:
+                        if kw in belief_content:
+                            relevance_score += 1
             
-            if conflict:
-                # 如果是极端表述，强制提高置信度用于严重性判断
+            # 只有相关性 > 0 的才考虑
+            if relevance_score > 0:
+                relevant_beliefs.append((belief, relevance_score))
+        
+        # 按相关性排序
+        relevant_beliefs.sort(key=lambda x: x[1], reverse=True)
+        
+        if not relevant_beliefs:
+            return None
+        
+        # 检查最相关的belief是否冲突
+        for belief, score in relevant_beliefs:
+            belief_content = belief.get("content", "").lower()
+            
+            # 检测冲突
+            if self._detect_conflict(user_input_lower, belief_content, belief.get("stance", "neutral")):
+                # 如果是极端表述，标记
                 if is_extreme:
                     belief["_is_extreme"] = True
                 return belief
