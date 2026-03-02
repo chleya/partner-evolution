@@ -1,0 +1,376 @@
+{
+  "dimension": 384,
+  "count": 37,
+  "items": [
+    {
+      "id": "conv_115b0ae7",
+      "index": 0,
+      "metadata": {
+        "type": "conversation",
+        "content": "优化AI助手能力，让它成为真正的伙伴",
+        "user": "Chen Leiyang",
+        "timestamp": "2026-03-02T04:14:28.044693+00:00"
+      }
+    },
+    {
+      "id": "entity_f864e7ff",
+      "index": 1,
+      "metadata": {
+        "type": "entity",
+        "content": "NeuralSite: project - {'location': 'F:\\\\drawing_3d', 'stage': 'Stage4', 'status': 'active'}",
+        "name": "NeuralSite",
+        "entity_type": "project"
+      }
+    },
+    {
+      "id": "entity_c2919bfb",
+      "index": 2,
+      "metadata": {
+        "type": "entity",
+        "content": "Evo-Swarm: project - {'location': 'F:\\\\skill\\\\evo_swarm', 'github': 'https://github.com/chleya/Evo-Swarm'}",
+        "name": "Evo-Swarm",
+        "entity_type": "project"
+      }
+    },
+    {
+      "id": "task_e8d16f7e",
+      "index": 3,
+      "metadata": {
+        "type": "task",
+        "content": "Partner-Evolution: 实现记忆系统v2.0",
+        "project": "Partner-Evolution",
+        "timestamp": "2026-03-02T04:14:28.086857+00:00"
+      }
+    },
+    {
+      "id": "conv_cea9dbf3",
+      "index": 4,
+      "metadata": {
+        "type": "conversation",
+        "content": "优化AI助手能力，让它成为真正的伙伴",
+        "user": "Chen Leiyang",
+        "timestamp": "2026-03-02T04:14:44.189493+00:00"
+      }
+    },
+    {
+      "id": "entity_07bec132",
+      "index": 5,
+      "metadata": {
+        "type": "entity",
+        "content": "NeuralSite: project - {'location': 'F:\\\\drawing_3d', 'stage': 'Stage4', 'status': 'active'}",
+        "name": "NeuralSite",
+        "entity_type": "project"
+      }
+    },
+    {
+      "id": "entity_b88e6852",
+      "index": 6,
+      "metadata": {
+        "type": "entity",
+        "content": "Evo-Swarm: project - {'location': 'F:\\\\skill\\\\evo_swarm', 'github': 'https://github.com/chleya/Evo-Swarm'}",
+        "name": "Evo-Swarm",
+        "entity_type": "project"
+      }
+    },
+    {
+      "id": "task_d7f37943",
+      "index": 7,
+      "metadata": {
+        "type": "task",
+        "content": "Partner-Evolution: 实现记忆系统v2.0",
+        "project": "Partner-Evolution",
+        "timestamp": "2026-03-02T04:14:44.219492+00:00"
+      }
+    },
+    {
+      "id": "conv_798dbf74",
+      "index": 8,
+      "metadata": {
+        "type": "conversation",
+        "content": "核心配置：AI助手必须在每天9点主动签到",
+        "user": "System",
+        "timestamp": "2026-03-02T04:18:30.266920+00:00"
+      }
+    },
+    {
+      "id": "conv_02b9ccdf",
+      "index": 9,
+      "metadata": {
+        "type": "conversation",
+        "content": "昨天的项目进度会议讨论了Stage4部署",
+        "user": "Chen Leiyang",
+        "timestamp": "2026-03-02T04:18:30.321899+00:00"
+      }
+    },
+    {
+      "id": "conv_39e43f48",
+      "index": 10,
+      "metadata": {
+        "type": "conversation",
+        "content": "一个月前的技术调研：选择PostgreSQL还是MongoDB",
+        "user": "Chen Leiyang",
+        "timestamp": "2026-03-02T04:18:30.325899+00:00"
+      }
+    },
+    {
+      "id": "conv_eb6c3b6e",
+      "index": 11,
+      "metadata": {
+        "type": "conversation",
+        "content": "临时测试任务",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:18:30.328899+00:00"
+      }
+    },
+    {
+      "id": "entity_76dc8287",
+      "index": 12,
+      "metadata": {
+        "type": "entity",
+        "content": "70%边界理论: concept - {'source': 'Chen Leiyang'}",
+        "name": "70%边界理论",
+        "entity_type": "concept"
+      }
+    },
+    {
+      "id": "entity_f3811889",
+      "index": 13,
+      "metadata": {
+        "type": "entity",
+        "content": "测试概念: concept - {'source': 'test'}",
+        "name": "测试概念",
+        "entity_type": "concept"
+      }
+    },
+    {
+      "id": "conv_d7338984",
+      "index": 14,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 0",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:18:30.338898+00:00"
+      }
+    },
+    {
+      "id": "conv_e42c9f61",
+      "index": 15,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 1",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:18:30.341899+00:00"
+      }
+    },
+    {
+      "id": "conv_c9738510",
+      "index": 16,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 2",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:18:30.345376+00:00"
+      }
+    },
+    {
+      "id": "conv_6a875496",
+      "index": 17,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 3",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:18:30.347572+00:00"
+      }
+    },
+    {
+      "id": "conv_e04dde87",
+      "index": 18,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 4",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:18:30.350295+00:00"
+      }
+    },
+    {
+      "id": "conv_13a8cd7b",
+      "index": 19,
+      "metadata": {
+        "type": "conversation",
+        "content": "核心配置：AI助手必须在每天9点主动签到",
+        "user": "System",
+        "timestamp": "2026-03-02T04:20:18.567478+00:00"
+      }
+    },
+    {
+      "id": "conv_5822226e",
+      "index": 20,
+      "metadata": {
+        "type": "conversation",
+        "content": "昨天的项目进度会议讨论了Stage4部署",
+        "user": "Chen Leiyang",
+        "timestamp": "2026-03-02T04:20:18.593336+00:00"
+      }
+    },
+    {
+      "id": "conv_d320fb96",
+      "index": 21,
+      "metadata": {
+        "type": "conversation",
+        "content": "一个月前的技术调研：选择PostgreSQL还是MongoDB",
+        "user": "Chen Leiyang",
+        "timestamp": "2026-03-02T04:20:18.596351+00:00"
+      }
+    },
+    {
+      "id": "conv_181ae852",
+      "index": 22,
+      "metadata": {
+        "type": "conversation",
+        "content": "临时测试任务",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:20:18.602854+00:00"
+      }
+    },
+    {
+      "id": "entity_46b57772",
+      "index": 23,
+      "metadata": {
+        "type": "entity",
+        "content": "70%边界理论: concept - {'source': 'Chen Leiyang'}",
+        "name": "70%边界理论",
+        "entity_type": "concept"
+      }
+    },
+    {
+      "id": "entity_b53f379b",
+      "index": 24,
+      "metadata": {
+        "type": "entity",
+        "content": "测试概念: concept - {'source': 'test'}",
+        "name": "测试概念",
+        "entity_type": "concept"
+      }
+    },
+    {
+      "id": "conv_869721bf",
+      "index": 25,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 0",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:20:18.615892+00:00"
+      }
+    },
+    {
+      "id": "conv_5f3cc20b",
+      "index": 26,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 1",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:20:18.620664+00:00"
+      }
+    },
+    {
+      "id": "conv_a8979cc9",
+      "index": 27,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 2",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:20:18.623664+00:00"
+      }
+    },
+    {
+      "id": "conv_30b63232",
+      "index": 28,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 3",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:20:18.626661+00:00"
+      }
+    },
+    {
+      "id": "conv_e9f3c89f",
+      "index": 29,
+      "metadata": {
+        "type": "conversation",
+        "content": "测试记忆 4",
+        "user": "Test",
+        "timestamp": "2026-03-02T04:20:18.629661+00:00"
+      }
+    },
+    {
+      "id": "entity_d54a422b",
+      "index": 30,
+      "metadata": {
+        "type": "entity",
+        "content": "NeuralSite: project - {'stage': 'Stage4'}",
+        "name": "NeuralSite",
+        "entity_type": "project"
+      }
+    },
+    {
+      "id": "entity_cb405ec0",
+      "index": 31,
+      "metadata": {
+        "type": "entity",
+        "content": "Evo-Swarm: project - {'status': 'active'}",
+        "name": "Evo-Swarm",
+        "entity_type": "project"
+      }
+    },
+    {
+      "id": "entity_3f825f08",
+      "index": 32,
+      "metadata": {
+        "type": "entity",
+        "content": "Partner-Evolution: project - {'phase': 'Week4'}",
+        "name": "Partner-Evolution",
+        "entity_type": "project"
+      }
+    },
+    {
+      "id": "conv_9be9d7d3",
+      "index": 33,
+      "metadata": {
+        "type": "conversation",
+        "content": "开始Week 4测试",
+        "user": "Chen",
+        "timestamp": "2026-03-02T04:31:22.969381+00:00"
+      }
+    },
+    {
+      "id": "task_72031abf",
+      "index": 34,
+      "metadata": {
+        "type": "task",
+        "content": "Partner-Evolution: 完成集成测试",
+        "project": "Partner-Evolution",
+        "timestamp": "2026-03-02T04:31:22.972381+00:00"
+      }
+    },
+    {
+      "id": "conv_881802e1",
+      "index": 35,
+      "metadata": {
+        "type": "conversation",
+        "content": "MAR反思结果: 综合3个视角的观点，形成平衡建议",
+        "user": "System",
+        "timestamp": "2026-03-02T04:31:22.981382+00:00"
+      }
+    },
+    {
+      "id": "task_86f3bca5",
+      "index": 36,
+      "metadata": {
+        "type": "task",
+        "content": "Partner-Evolution: 完成工作流: 分析NeuralSite截图，结合Evo-Swarm给出部署方案",
+        "project": "Partner-Evolution",
+        "timestamp": "2026-03-02T04:31:22.984356+00:00"
+      }
+    }
+  ]
+}
