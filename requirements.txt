@@ -34,3 +34,6 @@ pytest-asyncio>=0.21.0
 
 # 观测
 prometheus-client>=0.19.0
+
+# 向量检索优化 (可选)
+hnswlib>=0.8.0
