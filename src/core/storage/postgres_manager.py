@@ -366,9 +366,6 @@ class StorageManager:
                     update_query = "UPDATE beliefs SET confidence = %s, updated_at = NOW(), version = %s WHERE id = %s"
                     self.db.execute_write(update_query, (new_confidence, old_version + 1, existing[0].get("id")))
                 return True  # 已存在，不重复插入
-                    update_query = "UPDATE beliefs SET confidence = %s, updated_at = NOW() WHERE id = %s"
-                    self.db.execute_write(update_query, (new_confidence, existing[0].get("id")))
-                return True  # 已存在，不重复插入
             
             # 不存在，插入新记录
             query = """

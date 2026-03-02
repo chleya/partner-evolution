@@ -401,7 +401,17 @@ reasoning: <推理链>
         if evolution_result:
             logger.info(f"Belief evolution triggered: {evolution_result}")
         
-        # 6. Judge过滤（置信度阈值）
+        # 6. 定期自动演化（每5次循环）
+        cycle_count = getattr(self, "_cycle_count", 0) + 1
+        self._cycle_count = cycle_count
+        
+        if cycle_count % 5 == 0:
+            logger.info(f"Running automatic belief evolution (cycle {cycle_count})...")
+            auto_result = self.auto_evolve_beliefs()
+            if auto_result:
+                logger.info(f"Auto evolution result: {auto_result}")
+        
+        # 7. Judge过滤（置信度阈值）
         if belief.get("confidence", 0) < self.judge_threshold:
             return {
                 "status": "skipped",
@@ -476,6 +486,41 @@ reasoning: <推理链>
         }
         
         return evolution_data
+    
+    def auto_evolve_beliefs(self) -> Optional[Dict]:
+        """自动演化信念 - 基于新的集体共识更新旧信念
+        
+        当累积了足够多的新信念后，运行演化Judge决定如何升级/合并/废弃旧信念
+        """
+        beliefs = self.storage.get_beliefs()
+        
+        if len(beliefs) < 5:
+            return None
+        
+        # 获取最近的信念（可能是新融合的）
+        recent = [b for b in beliefs if b.get("version", 1) == 1]
+        older = [b for b in beliefs if b.get("version", 1) > 1]
+        
+        if not recent or not older:
+            return None
+        
+        # 简单演化策略：更新旧信念的置信度
+        evolved = []
+        for old in older:
+            # 如果新信念有更高的置信度，可能需要调整
+            for new in recent:
+                if new.get("confidence", 0) > old.get("confidence", 0):
+                    # 可以选择升级旧信念
+                    old["confidence"] = min(new.get("confidence", 0) + 0.05, 0.95)
+                    old["evolution_count"] = old.get("evolution_count", 0) + 1
+                    old["version"] = old.get("version", 1) + 1
+                    evolved.append(old["id"])
+        
+        return {
+            "evolved_count": len(evolved),
+            "total_beliefs": len(beliefs),
+            "message": "Belief evolution completed"
+        }
 
 
 # 全局实例

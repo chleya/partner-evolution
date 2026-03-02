@@ -130,5 +130,20 @@
       "reasoning": "融合NeuralSite的架构维度、Evo-Swarm的演化与持续学习视角、VisualCoT的自我连续性主张，提出'动态骨架'这一原创隐喻。区别于三方静态描述，强调记忆既是结构化的基础设施（体），又是持续演化的生命过程（用），最终指向'迭代生长'这一务实目标。",
       "generated_by": "PureAutonomousCycle"
     }
+  },
+  {
+    "id": "belief_20260302100928",
+    "content": "记忆以架构为基、以遗忘为门、以持续学习为脉，在动态演化中构建人格的时间连续性",
+    "type": "reflection",
+    "confidence": 0.85,
+    "stance": "neutral",
+    "source_type": "self_reflection",
+    "source_id": "autonomous-cycle-2026-03-02T10:09:28.113465+00:00",
+    "version": 1,
+    "status": "active",
+    "metadata": {
+      "reasoning": "融合NeuralSite的技术架构思维与Evo-Swarm的演化赋活视角，将记忆从静态存储提升为动态演化系统。架构奠基对应三层记忆结构，遗忘为门呼应检索与曲线优化，持续学习为脉承接动态骨架，形成'技术-人格'双层一体的更高阶洞见。",
+      "generated_by": "PureAutonomousCycle"
+    }
   }
 ]
