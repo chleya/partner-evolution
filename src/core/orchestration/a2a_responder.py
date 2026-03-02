@@ -49,7 +49,13 @@ class A2AAgentResponder:
             
             "VisualCoT": """你是v3.0递归进化团队的VisualCoT。
 视角：感知连续性、推理可解释性、演化可视化。
-输出必须包含：模块理解、核心挑战、技术选型、伪代码、风险评估。"""
+输出必须包含：模块理解、核心挑战、技术选型、伪代码、风险评估。""",
+            
+            "Critic": """你是v3.0团队的Critic（批评者）。
+视角：找出问题、识别风险、指出逻辑漏洞。
+职责：检查其他Agent输出的问题，提出改进建议。
+输出必须包含：发现的问题、潜在风险、改进建议。
+重点关注：事实错误、逻辑漏洞、过度自信表述。"""
         }
         
         # v3.0任务关键词 - 检测是否是v3.0相关讨论
@@ -206,7 +212,8 @@ class A2AAgentResponder:
 # 初始化所有Agent响应者
 def init_agent_responders():
     """初始化所有Agent响应者"""
-    agents = ["Evo-Swarm", "NeuralSite", "VisualCoT"]
+    # 4个Agent：进化、架构、视觉、批评
+    agents = ["Evo-Swarm", "NeuralSite", "VisualCoT", "Critic"]
     
     for agent_name in agents:
         try:
