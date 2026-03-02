@@ -331,16 +331,40 @@ class StorageManager:
     # ============== 信念操作 (v2.2准备) ==============
     
     def save_belief(self, belief: Dict) -> bool:
-        """保存信念"""
+        """保存信念（带去重）"""
+        content = belief.get("content", "")
+        new_confidence = belief.get("confidence", 0.5)
+        
+        # JSON模式下的去重检查
+        if not self.use_db:
+            existing = self.json_fallback.query("beliefs", lambda x: x.get("content") == content)
+            if existing:
+                # 取更高的confidence
+                existing_belief = existing[0]
+                old_confidence = existing_belief.get("confidence", 0)
+                if new_confidence > old_confidence:
+                    existing_belief["confidence"] = new_confidence
+                    existing_belief["updated_at"] = datetime.now().isoformat()
+                return True  # 已存在，不重复添加
+        
+        # PostgreSQL模式
         if self.use_db:
+            # 先检查是否存在相似内容
+            check_query = "SELECT id, confidence FROM beliefs WHERE content = %s AND status = 'active'"
+            existing = self.db.execute(check_query, (content,))
+            
+            if existing and len(existing) > 0:
+                # 存在，取更高的confidence
+                old_confidence = existing[0].get("confidence", 0)
+                if new_confidence > old_confidence:
+                    update_query = "UPDATE beliefs SET confidence = %s, updated_at = NOW() WHERE id = %s"
+                    self.db.execute_write(update_query, (new_confidence, existing[0].get("id")))
+                return True  # 已存在，不重复插入
+            
+            # 不存在，插入新记录
             query = """
                 INSERT INTO beliefs (id, content, belief_type, confidence, evidence, stance, status, created_at, updated_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                ON CONFLICT (id) DO UPDATE SET
-                    content = EXCLUDED.content,
-                    confidence = EXCLUDED.confidence,
-                    evidence = EXCLUDED.evidence,
-                    updated_at = NOW()
             """
             return self.db.execute_write(query, (
                 belief.get("id", ""),
@@ -351,6 +375,7 @@ class StorageManager:
                 belief.get("stance", "neutral"),
                 belief.get("status", "active")
             ))
+        
         return self.json_fallback.append("beliefs", belief)
     
     def get_beliefs(self, status: str = "active") -> List[Dict]:

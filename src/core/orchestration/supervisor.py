@@ -229,8 +229,11 @@ class SupervisorAgent:
         # ====== 反对层检查 ======
         # 检查用户指令是否与信念冲突
         try:
-            from src.core.services.opposition_layer import get_opposition_layer
-            opposition = get_opposition_layer()
+            from src.core.services.opposition_layer import OppositionLayer
+            from src.core.storage import get_storage_manager
+            
+            storage = get_storage_manager()
+            opposition = OppositionLayer(storage=storage, think_engine=self.thinking)
             opposition_result = opposition.check_opposition(description)
             
             if opposition_result.get("conflict"):

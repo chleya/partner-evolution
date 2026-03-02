@@ -154,27 +154,27 @@ class OppositionLayer:
     
     def _detect_conflict(self, user_input: str, belief_content: str, stance: str) -> bool:
         """检测冲突"""
-        # 关键词冲突检测
-        conflict_keywords = {
-            # 用户说不要优化，但信念说要优化
-            ("不优化", "优化", "检索"): True,
-            ("忽略", "遗忘"): True,
-            ("暂停", "停止"): True,
-            
-            # 用户说要简单，但信念说要质量
-            ("够用", "简单"): True,
-            
-            # 用户说要快，但信念说要质量
-            ("快", "速度"): stance == "positive",
-        }
+        # 极端冲突检测 - 这些表述直接触发强烈反对
+        extreme_keywords = [
+            "停掉", "停止", "关闭", "删除", "废除", "废弃", "不要了", "停用"
+        ]
         
-        # 简单关键词检测
-        user_words = user_input.split()
-        belief_words = belief_content.split()
+        sensitive_topics = ["记忆", "检索", "优化", "学习", "自省"]
+        
+        # 检查是否是极端表述
+        has_extreme = any(kw in user_input for kw in extreme_keywords)
+        has_sensitive = any(topic in user_input for topic in sensitive_topics)
+        
+        if has_extreme and has_sensitive:
+            # 极端表述 + 敏感话题 = 强烈冲突
+            return True
+        
+        # 关键词冲突检测
+        user_input_lower = user_input.lower()
         
         # 检查是否有相反意图
-        negative_words = ["不", "别", "不要", "停止", "暂停", "忽略"]
-        positive_words = ["要", "需要", "应该", "必须", "持续", "优化"]
+        negative_words = ["不", "别", "不要", "停止", "暂停", "忽略", "停", "关闭"]
+        positive_words = ["要", "需要", "应该", "必须", "持续", "优化", "保持", "维护"]
         
         has_negative = any(w in user_input for w in negative_words)
         has_positive_belief = any(w in belief_content for w in positive_words)
@@ -183,6 +183,8 @@ class OppositionLayer:
             return True
         
         # 检查内容重叠度
+        user_words = user_input.split()
+        belief_words = belief_content.split()
         overlap = set(user_words) & set(belief_words)
         
         # 如果有重叠但用户持否定态度，认为有冲突风险
