@@ -55,28 +55,45 @@ class A2AAgentResponder:
         if not beliefs:
             return None
         
-        # 根据Agent选择不同的belief
+        # 根据Agent选择不同的belief - 差异化策略
         if self.agent_name == "Evo-Swarm":
-            # Planner: 选择规划/学习相关
-            for b in beliefs:
-                if any(kw in b.get("content", "") for kw in ["优化", "学习", "改进", "持续"]):
-                    return {"content": b.get("content"), "confidence": b.get("confidence")}
+            # Planner: 选择规划/学习/成长相关 - 置信度0.73-0.82
+            candidates = [
+                b for b in beliefs 
+                if any(kw in b.get("content", "") for kw in ["学习", "优化", "持续", "改进", "进化"])
+                and b.get("confidence", 0) < 0.85
+            ]
+            if candidates:
+                return {"content": candidates[0].get("content"), "confidence": candidates[0].get("confidence")}
         
         elif self.agent_name == "NeuralSite":
-            # Executor: 选择执行/效率相关
-            for b in beliefs:
-                if any(kw in b.get("content", "") for kw in ["效率", "性能", "代码", "架构"]):
-                    return {"content": b.get("content"), "confidence": b.get("confidence")}
+            # Executor: 选择效率/性能/架构相关 - 置信度0.77-0.80
+            candidates = [
+                b for b in beliefs 
+                if any(kw in b.get("content", "") for kw in ["效率", "性能", "代码", "架构", "检索"])
+                and b.get("confidence", 0) < 0.85
+            ]
+            if candidates:
+                return {"content": candidates[0].get("content"), "confidence": candidates[0].get("confidence")}
         
         elif self.agent_name == "VisualCoT":
-            # Perceiver: 选择感知/观察相关
-            for b in beliefs:
-                if any(kw in b.get("content", "") for kw in ["记忆", "数据", "信息"]):
-                    return {"content": b.get("content"), "confidence": b.get("confidence")}
+            # Perceiver: 选择记忆/数据/观察相关 - 置信度0.78-0.90
+            candidates = [
+                b for b in beliefs 
+                if any(kw in b.get("content", "") for kw in ["记忆", "数据", "信息", "观察", "人格"])
+                and b.get("confidence", 0) < 0.90
+            ]
+            if candidates:
+                return {"content": candidates[0].get("content"), "confidence": candidates[0].get("confidence")}
         
-        # 默认返回第一个
+        # 默认返回置信度较低的（让高置信度保留给最后MAR融合）
+        low_conf = [b for b in beliefs if b.get("confidence", 0) < 0.80]
+        if low_conf:
+            return {"content": low_conf[0].get("content"), "confidence": low_conf[0].get("confidence")}
+        
+        # 兜底
         if beliefs:
-            b = beliefs[0]
+            b = beliefs[-1]  # 取置信度最低的
             return {"content": b.get("content"), "confidence": b.get("confidence")}
         
         return None

@@ -362,6 +362,17 @@ reasoning: <推理链>
         # 6. 可选：生成目标
         goal_created = self.generate_goal_from_belief(belief)
         
+        # 打印会议摘要
+        if responses:
+            agents = [r.get("from_agent", "unknown") for r in responses]
+            logger.info(f"""
+=== 集体自省会议纪要 ===
+参与Agent: {', '.join(agents)}
+讨论输入: {len(context.split('。'))}条记忆
+最终共识: {belief.get('assertion', '')[:50]}... (conf: {belief.get('confidence')})
+=== 会议结束 ===
+            """)
+        
         logger.info(f"Autonomous cycle completed: belief saved, goal={goal_created}")
         
         return {
