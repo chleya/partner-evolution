@@ -1,0 +1,87 @@
+# Grafana Dashboard 配置
+# PM审查要求的4个核心指标可视化
+
+apiVersion: 1
+
+dashboards:
+  - name: "Partner-Evolution 监控大盘"
+    uid: "partner-evolution-main"
+    folder: "AI Partner"
+    type: "file"
+    options:
+      path: "/etc/grafana/provisioning/dashboards"
+
+# Dashboard JSON 配置
+dashboard:
+  title: "Partner-Evolution 核心指标"
+  tags: ["partner-evolution", "ai"]
+  timezone: "browser"
+  refresh: "30s"
+  
+  panels:
+    # 1. API延迟
+    - title: "API响应延迟 (ms)"
+      type: "graph"
+      gridPos: {x: 0, y: 0, w: 12, h: 8}
+      targets:
+        - expr: "histogram_quantile(0.95, rate(api_request_duration_seconds_bucket[5m])) * 1000"
+          legendFormat: "P95"
+        - expr: "histogram_quantile(0.50, rate(api_request_duration_seconds_bucket[5m])) * 1000"
+          legendFormat: "P50"
+      yaxes:
+        - format: "ms"
+          min: 0
+    
+    # 2. LLM Token消耗
+    - title: "LLM Token消耗"
+      type: "graph"
+      gridPos: {x: 12, y: 0, w: 12, h: 8}
+      targets:
+        - expr: "rate(llm_tokens_total[5m])"
+          legendFormat: "Tokens/sec"
+        - expr: "rate(llm_requests_total[5m])"
+          legendFormat: "Requests/sec"
+      yaxes:
+        - format: "short"
+          min: 0
+    
+    # 3. 置信度平均值
+    - title: "置信度趋势"
+      type: "graph"
+      gridPos: {x: 0, y: 8, w: 12, h: 8}
+      targets:
+        - expr: "avg(memory_confidence)"
+          legendFormat: "平均置信度"
+        - expr: "avg(decision_confidence)"
+          legendFormat: "决策置信度"
+      yaxes:
+        - format: "percentunit"
+          min: 0
+          max: 1
+    
+    # 4. 告警触发率
+    - title: "告警统计"
+      type: "stat"
+      gridPos: {x: 12, y: 8, w: 6, h: 8}
+      targets:
+        - expr: "sum(alert_triggered_total{p level='P0'})"
+          legendFormat: "P0告警"
+        - expr: "sum(alert_triggered_total{p level='P1'})"
+          legendFormat: "P1告警"
+        - expr: "sum(alert_triggered_total{p level='P2'})"
+          legendFormat: "P2告警"
+      options:
+        colorMode: "background"
+        graphMode: "none"
+    
+    # 额外: 系统健康状态
+    - title: "系统健康"
+      type: "gauge"
+      gridPos: {x: 18, y: 8, w: 6, h: 8}
+      targets:
+        - expr: "system_health_score"
+          legendFormat: "健康度"
+      options:
+        showThresholdLabels: true
+        min: 0
+        max: 100

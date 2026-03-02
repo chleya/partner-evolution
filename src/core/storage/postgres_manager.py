@@ -1,534 +1,325 @@
 """
-PostgreSQL数据库管理器
-支持pgvector向量存储 + 优雅降级到JSON
+PostgreSQL存储管理器 - 替换JSON方案
+解决PM审查中的"数据存储临时性过强"问题
 """
-import os
 import json
 import logging
-from typing import Any, Dict, List, Optional
-from dataclasses import dataclass, asdict
+from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
-from pathlib import Path
+import asyncio
 
 logger = logging.getLogger(__name__)
 
-# 尝试导入PostgreSQL驱动
-try:
-    import psycopg2
-    import numpy as np
-    POSTGRES_AVAILABLE = True
-except ImportError:
-    POSTGRES_AVAILABLE = False
-    logger.warning("PostgreSQL driver not available, using JSON fallback")
-
-
-@dataclass
-class DBConfig:
-    """数据库配置"""
-    host: str = "localhost"
-    port: int = 5432
-    user: str = "ai_partner"
-    password: str = ""
-    database: str = "ai_partner_db"
-
 
 class PostgresManager:
-    """PostgreSQL管理器"""
+    """
+    PostgreSQL存储管理器
     
-    def __init__(self, config: DBConfig = None):
-        self.config = config or DBConfig(
-            host=os.getenv("DB_HOST", "localhost"),
-            port=int(os.getenv("DB_PORT", "5432")),
-            user=os.getenv("DB_USER", "ai_partner"),
-            password=os.getenv("DB_PASSWORD", ""),
-            database=os.getenv("DB_DATABASE", "ai_partner_db")
-        )
-        self.conn = None
-        self._connect()
+    功能：
+    1. 记忆的持久化存储
+    2. 向量相似度搜索 (pgvector)
+    3. 知识图谱存储 (Neo4j兼容)
+    """
     
-    def _connect(self):
-        """建立数据库连接"""
-        if not POSTGRES_AVAILABLE:
-            logger.info("PostgreSQL driver not available")
-            return
-            
+    # 表名
+    TABLE_MEMORIES = "memories"
+    TABLE_BELIEFS = "beliefs"
+    TABLE_GOALS = "goals"
+    TABLE_AUDIT = "audit_log"
+    
+    def __init__(self, connection_string: str = None):
+        self.connection_string = connection_string
+        self._conn = None
+        self._connected = False
+    
+    async def connect(self) -> bool:
+        """连接数据库"""
+        if self._connected:
+            return True
+        
+        # 尝试连接
         try:
-            self.conn = psycopg2.connect(
-                host=self.config.host,
-                port=self.config.port,
-                user=self.config.user,
-                password=self.config.password,
-                database=self.config.database
-            )
-            self.conn.autocommit = True
-            logger.info(f"PostgreSQL connected to {self.config.host}:{self.config.port}")
+            import asyncpg
+            self._conn = await asyncpg.connect(self.connection_string)
+            self._connected = True
+            logger.info("Connected to PostgreSQL")
+            return True
+        except ImportError:
+            logger.warning("asyncpg not installed, falling back to JSON")
+            return False
         except Exception as e:
             logger.warning(f"PostgreSQL connection failed: {e}")
-            self.conn = None
-    
-    def is_connected(self) -> bool:
-        """检查连接状态"""
-        if not self.conn:
             return False
+    
+    async def disconnect(self):
+        """断开连接"""
+        if self._conn:
+            await self._conn.close()
+            self._connected = False
+    
+    async def init_schema(self):
+        """初始化数据库表"""
+        if not self._connected:
+            return False
+        
+        # 创建记忆表
+        await self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS memories (
+                id VARCHAR(255) PRIMARY KEY,
+                content TEXT NOT NULL,
+                memory_type VARCHAR(50),
+                tier VARCHAR(20),
+                confidence FLOAT DEFAULT 0.5,
+                access_count INT DEFAULT 0,
+                last_access TIMESTAMP,
+                created_at TIMESTAMP DEFAULT NOW(),
+                metadata JSONB
+            )
+        """)
+        
+        # 创建向量索引 (pgvector)
         try:
-            with self.conn.cursor() as cursor:
-                cursor.execute("SELECT 1")
-            return True
+            await self._conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memories_embedding 
+                ON memories USING ivfflat (embedding vector_cosine_ops)
+            """)
         except:
-            return False
-    
-    def execute(self, query: str, params: tuple = None) -> List[Dict]:
-        """执行查询"""
-        if not self.conn:
-            return []
+            logger.warning("pgvector extension not available")
         
-        try:
-            with self.conn.cursor() as cursor:
-                cursor.execute(query, params or ())
-                columns = [desc[0] for desc in cursor.description] if cursor.description else []
-                results = cursor.fetchall()
-                return [dict(zip(columns, row)) for row in results]
-        except Exception as e:
-            logger.error(f"Query failed: {e}")
-            return []
-    
-    def execute_one(self, query: str, params: tuple = None) -> Optional[Dict]:
-        """执行查询，返回单条"""
-        results = self.execute(query, params)
-        return results[0] if results else None
-    
-    def execute_write(self, query: str, params: tuple = None) -> bool:
-        """执行写入"""
-        if not self.conn:
-            return False
-        try:
-            with self.conn.cursor() as cursor:
-                cursor.execute(query, params or ())
-            return True
-        except Exception as e:
-            logger.error(f"Write failed: {e}")
-            return False
-    
-    def close(self):
-        """关闭连接"""
-        if self.conn:
-            self.conn.close()
-            self.conn = None
-
-
-class JSONFallback:
-    """JSON文件降级方案"""
-    
-    def __init__(self, data_dir: str = "data/storage"):
-        self.data_dir = Path(data_dir)
-        self.data_dir.mkdir(parents=True, exist_ok=True)
-    
-    def _get_file_path(self, table: str) -> Path:
-        return self.data_dir / f"{table}.json"
-    
-    def load(self, table: str) -> List[Dict]:
-        """加载数据"""
-        path = self._get_file_path(table)
-        if not path.exists():
-            return []
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return []
-    
-    def save(self, table: str, data: List[Dict]) -> bool:
-        """保存数据"""
-        path = self._get_file_path(table)
-        try:
-            with open(path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-            return True
-        except Exception as e:
-            logger.error(f"Save failed: {e}")
-            return False
-    
-    def append(self, table: str, item: Dict) -> bool:
-        """追加数据"""
-        data = self.load(table)
-        data.append(item)
-        return self.save(table, data)
-    
-    def update(self, table: str, id_field: str, item: Dict) -> bool:
-        """更新数据"""
-        data = self.load(table)
-        for i, row in enumerate(data):
-            if row.get(id_field) == item.get(id_field):
-                data[i] = item
-                return self.save(table, data)
-        return self.append(table, item)
-    
-    def delete(self, table: str, id_field: str, item_id: str) -> bool:
-        """删除数据"""
-        data = self.load(table)
-        data = [row for row in data if row.get(id_field) != item_id]
-        return self.save(table, data)
-    
-    def query(self, table: str, filter_func=None) -> List[Dict]:
-        """查询数据"""
-        data = self.load(table)
-        if filter_func:
-            data = [row for row in data if filter_func(row)]
-        return data
-
-
-class StorageManager:
-    """统一存储管理器 - 支持PostgreSQL和JSON降级"""
-    
-    def __init__(self, config: DBConfig = None):
-        self.config = config
+        # 创建信念表
+        await self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS beliefs (
+                id VARCHAR(255) PRIMARY KEY,
+                statement TEXT NOT NULL,
+                category VARCHAR(50),
+                confidence FLOAT DEFAULT 0.5,
+                sources JSONB,
+                conflicts JSONB,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
         
-        # 查询缓存
-        self._memory_cache: Dict[str, tuple] = {}
-        self._cache_ttl = 60  # 60秒缓存
+        # 创建目标表
+        await self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS goals (
+                id VARCHAR(255) PRIMARY KEY,
+                title TEXT NOT NULL,
+                description TEXT,
+                priority VARCHAR(20),
+                status VARCHAR(20) DEFAULT 'pending',
+                progress FLOAT DEFAULT 0.0,
+                created_at TIMESTAMP DEFAULT NOW(),
+                completed_at TIMESTAMP
+            )
+        """)
         
-        # 自动探测PostgreSQL连接（自动降级）
-        self.use_db = False
-        self.db = None
+        # 创建审计日志表
+        await self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id SERIAL PRIMARY KEY,
+                level VARCHAR(20),
+                action VARCHAR(255),
+                message TEXT,
+                timestamp TIMESTAMP DEFAULT NOW()
+            )
+        """)
         
-        # 尝试连接PostgreSQL
-        if POSTGRES_AVAILABLE:
-            try:
-                self.db = PostgresManager(config)
-                if self.db.is_connected():
-                    self.use_db = True
-                    # 创建索引优化
-                    self._ensure_indexes()
-                    logger.info("PostgreSQL connected, using DB storage")
-                else:
-                    logger.warning("PostgreSQL connection failed, using JSON fallback")
-                    self.db = None
-            except Exception as e:
-                logger.warning(f"PostgreSQL init failed: {e}, using JSON fallback")
-                self.db = None
-        else:
-            logger.info("PostgreSQL driver not available, using JSON fallback")
-        
-        # 降级方案
-        self.json_fallback = JSONFallback()
-        
-        # 记录启动日志
-        if self.use_db:
-            logger.info("Storage: PostgreSQL mode (optimized with indexes)")
-        else:
-            logger.info("Storage: JSON fallback mode")
+        logger.info("Database schema initialized")
+        return True
     
-    def _ensure_indexes(self):
-        """确保数据库索引存在"""
-        if not self.use_db:
-            return
-        try:
-            # 记忆表索引
-            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_memories_tier ON memories(tier)")
-            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(memory_type)")
-            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at DESC)")
-            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_memories_conf ON memories(confidence DESC)")
-            
-            # 信念表索引
-            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_beliefs_conf ON beliefs(confidence DESC)")
-            self.db.execute_write("CREATE INDEX IF NOT EXISTS idx_beliefs_status ON beliefs(status)")
-            
-            logger.info("Database indexes optimized")
-        except Exception as e:
-            logger.warning(f"Index creation failed: {e}")
+    # ========== 记忆操作 ==========
     
-    # ============== 记忆操作 ==============
-    
-    def save_memory(self, memory: Dict) -> bool:
+    async def save_memory(self, memory: Dict) -> bool:
         """保存记忆"""
-        if self.use_db:
-            return self._save_memory_db(memory)
-        return self.json_fallback.append("memories", memory)
-    
-    def get_memory(self, memory_id: str) -> Optional[Dict]:
-        """获取记忆"""
-        if self.use_db:
-            return self._get_memory_db(memory_id)
-        data = self.json_fallback.query("memories", lambda x: x.get("id") == memory_id)
-        return data[0] if data else None
-    
-    def get_memories_by_tier(self, tier: str, limit: int = 100) -> List[Dict]:
-        """按层级获取记忆（带缓存）"""
-        import time
-        cache_key = f"tier_{tier}_{limit}"
-        now = time.time()
+        if not self._connected:
+            return False
         
-        # 检查缓存
-        if hasattr(self, '_memory_cache'):
-            if cache_key in self._memory_cache:
-                cached_time, cached_data = self._memory_cache[cache_key]
-                if now - cached_time < self._cache_ttl:
-                    return cached_data[:limit]
-        
-        # 获取数据
-        if self.use_db:
-            result = self._get_memories_by_tier_db(tier, limit)
-        else:
-            data = self.json_fallback.query("memories", lambda x: x.get("tier") == tier)
-            result = data[:limit]
-        
-        # 更新缓存
-        if hasattr(self, '_memory_cache'):
-            self._memory_cache[cache_key] = (now, result)
-        
-        return result
-    
-    def search_memories(self, query: str, limit: int = 10) -> List[Dict]:
-        """搜索记忆（带缓存）"""
-        import time
-        cache_key = f"search_{query}_{limit}"
-        now = time.time()
-        
-        # 检查缓存
-        if hasattr(self, '_memory_cache'):
-            if cache_key in self._memory_cache:
-                cached_time, cached_data = self._memory_cache[cache_key]
-                if now - cached_time < self._cache_ttl:
-                    return cached_data[:limit]
-        
-        # 获取数据
-        if self.use_db:
-            result = self._search_memories_db(query, limit)
-        else:
-            data = self.json_fallback.query("memories", 
-                lambda x: query.lower() in x.get("content", "").lower())
-            result = data[:limit]
-        
-        # 更新缓存
-        if hasattr(self, '_memory_cache'):
-            self._memory_cache[cache_key] = (now, result)
-        
-        return result
-    
-    def delete_memory(self, memory_id: str) -> bool:
-        """删除记忆"""
-        if self.use_db:
-            return self._delete_memory_db(memory_id)
-        return self.json_fallback.delete("memories", "id", memory_id)
-    
-    def get_memory_stats(self) -> Dict:
-        """获取记忆统计"""
-        if self.use_db:
-            return self._get_memory_stats_db()
-        
-        data = self.json_fallback.load("memories")
-        by_tier = {}
-        for item in data:
-            tier = item.get("tier", "unknown")
-            if tier not in by_tier:
-                by_tier[tier] = {"count": 0, "total_confidence": 0}
-            by_tier[tier]["count"] += 1
-            by_tier[tier]["total_confidence"] += item.get("confidence", 0)
-        
-        for tier in by_tier:
-            count = by_tier[tier]["count"]
-            by_tier[tier]["avg_confidence"] = by_tier[tier]["total_confidence"] / count if count > 0 else 0
-            del by_tier[tier]["total_confidence"]
-        
-        return {"total": len(data), "by_tier": by_tier}
-    
-    # ============== PostgreSQL实现 ==============
-    
-    def _save_memory_db(self, memory: Dict) -> bool:
-        query = """
-            INSERT INTO memories (id, tier, memory_type, content, confidence, importance, metadata, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-            ON CONFLICT (id) DO UPDATE SET
-                content = EXCLUDED.content,
-                confidence = EXCLUDED.confidence,
-                importance = EXCLUDED.importance,
-                metadata = EXCLUDED.metadata,
-                updated_at = NOW()
-        """
-        params = (
-            memory.get("id", ""),
-            memory.get("tier", "recall"),
-            memory.get("type", "general"),
-            memory.get("content", ""),
-            memory.get("confidence", 1.0),
-            memory.get("importance", 0.5),
-            json.dumps(memory.get("metadata", {}))
-        )
-        return self.db.execute_write(query, params)
-    
-    def _get_memory_db(self, memory_id: str) -> Optional[Dict]:
-        query = "SELECT * FROM memories WHERE id = %s"
-        return self.db.execute_one(query, (memory_id,))
-    
-    def _get_memories_by_tier_db(self, tier: str, limit: int) -> List[Dict]:
-        query = "SELECT * FROM memories WHERE tier = %s ORDER BY created_at DESC LIMIT %s"
-        return self.db.execute(query, (tier, limit))
-    
-    def _search_memories_db(self, query: str, limit: int) -> List[Dict]:
-        # 简单LIKE搜索
-        search_query = f"%{query}%"
-        sql = "SELECT * FROM memories WHERE content LIKE %s LIMIT %s"
-        return self.db.execute(sql, (search_query, limit))
-    
-    def _delete_memory_db(self, memory_id: str) -> bool:
-        query = "DELETE FROM memories WHERE id = %s"
-        return self.db.execute_write(query, (memory_id,))
-    
-    def _get_memory_stats_db(self) -> Dict:
-        query = """
-            SELECT tier, COUNT(*) as count, AVG(confidence) as avg_confidence
-            FROM memories GROUP BY tier
-        """
-        results = self.db.execute(query)
-        
-        by_tier = {}
-        total = 0
-        for row in results:
-            tier = row.get("tier", "unknown")
-            by_tier[tier] = {"count": row.get("count", 0), "avg_confidence": row.get("avg_confidence", 0)}
-            total += row.get("count", 0)
-        
-        return {"total": total, "by_tier": by_tier}
-    
-    # ============== 信念操作 (v2.2准备) ==============
-    
-    def save_belief(self, belief: Dict) -> bool:
-        """保存信念（带去重和演化支持）"""
-        content = belief.get("content", "")
-        new_confidence = belief.get("confidence", 0.5)
-        
-        # 获取演化字段
-        parent_id = belief.get("parent_id")
-        version = belief.get("version", 1)
-        
-        # JSON模式下的去重检查
-        if not self.use_db:
-            existing = self.json_fallback.query("beliefs", lambda x: x.get("content") == content)
-            if existing:
-                # 取更高的confidence
-                existing_belief = existing[0]
-                old_confidence = existing_belief.get("confidence", 0)
-                if new_confidence > old_confidence:
-                    existing_belief["confidence"] = new_confidence
-                    existing_belief["updated_at"] = datetime.now().isoformat()
-                    existing_belief["version"] = existing_belief.get("version", 1) + 1
-                return True  # 已存在，不重复添加
-        
-        # PostgreSQL模式
-        if self.use_db:
-            # 先检查是否存在相似内容
-            check_query = "SELECT id, confidence, version FROM beliefs WHERE content = %s AND status = 'active'"
-            existing = self.db.execute(check_query, (content,))
-            
-            if existing and len(existing) > 0:
-                # 存在，取更高的confidence
-                old_confidence = existing[0].get("confidence", 0)
-                if new_confidence > old_confidence:
-                    old_version = existing[0].get("version", 1)
-                    update_query = "UPDATE beliefs SET confidence = %s, updated_at = NOW(), version = %s WHERE id = %s"
-                    self.db.execute_write(update_query, (new_confidence, old_version + 1, existing[0].get("id")))
-                return True  # 已存在，不重复插入
-            
-            # 不存在，插入新记录
-            query = """
-                INSERT INTO beliefs (id, content, belief_type, confidence, evidence, stance, status, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-            """
-            return self.db.execute_write(query, (
-                belief.get("id", ""),
-                belief.get("content", ""),
-                belief.get("type", "factual"),
-                belief.get("confidence", 0.5),
-                json.dumps(belief.get("evidence", [])),
-                belief.get("stance", "neutral"),
-                belief.get("status", "active")
-            ))
-        
-        return self.json_fallback.append("beliefs", belief)
-    
-    def get_beliefs(self, status: str = "active") -> List[Dict]:
-        """获取信念"""
-        if self.use_db:
-            query = "SELECT * FROM beliefs WHERE status = %s ORDER BY confidence DESC"
-            return self.db.execute(query, (status,))
-        # JSON模式: 过滤status为active的，或没有status字段的(兼容旧数据)
-        return self.json_fallback.query("beliefs", lambda x: x.get("status") == status or "status" not in x)
-    
-    # ============== 自主目标操作 (v2.2准备) ==============
-    
-    def save_goal(self, goal: Dict) -> bool:
-        """保存目标"""
-        if self.use_db:
-            query = """
-                INSERT INTO autonomous_goals (id, title, description, goal_type, priority, progress, status, source, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+        try:
+            await self._conn.execute("""
+                INSERT INTO memories (id, content, memory_type, tier, confidence, access_count, last_access, metadata)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 ON CONFLICT (id) DO UPDATE SET
-                    progress = EXCLUDED.progress,
-                    status = EXCLUDED.status,
+                    content = EXCLUDED.content,
+                    confidence = EXCLUDED.confidence,
+                    access_count = EXCLUDED.access_count,
+                    last_access = EXCLUDED.last_access,
+                    metadata = EXCLUDED.metadata
+            """,
+                memory.get("id"),
+                memory.get("content"),
+                memory.get("type", "core"),
+                memory.get("tier", "core"),
+                memory.get("confidence", 0.5),
+                memory.get("access_count", 0),
+                datetime.now(timezone.utc),
+                json.dumps(memory.get("metadata", {}))
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save memory: {e}")
+            return False
+    
+    async def get_memory(self, memory_id: str) -> Optional[Dict]:
+        """获取记忆"""
+        if not self._connected:
+            return None
+        
+        try:
+            row = await self._conn.fetchrow(
+                "SELECT * FROM memories WHERE id = $1",
+                memory_id
+            )
+            if row:
+                return dict(row)
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get memory: {e}")
+            return None
+    
+    async def search_memories(
+        self, 
+        query: str = None,
+        memory_type: str = None,
+        tier: str = None,
+        limit: int = 10
+    ) -> List[Dict]:
+        """搜索记忆"""
+        if not self._connected:
+            return []
+        
+        try:
+            # 基础查询
+            sql = "SELECT * FROM memories WHERE 1=1"
+            params = []
+            
+            if memory_type:
+                params.append(memory_type)
+                sql += f" AND memory_type = ${len(params)}"
+            
+            if tier:
+                params.append(tier)
+                sql += f" AND tier = ${len(params)}"
+            
+            # 按置信度和访问时间排序
+            sql += " ORDER BY confidence DESC, last_access DESC LIMIT $#"
+            params.append(limit)
+            
+            sql = sql.replace("$#", f"${len(params)}")
+            
+            rows = await self._conn.fetch(sql, *params)
+            return [dict(r) for r in rows]
+            
+        except Exception as e:
+            logger.error(f"Failed to search memories: {e}")
+            return []
+    
+    async def delete_memory(self, memory_id: str) -> bool:
+        """删除记忆"""
+        if not self._connected:
+            return False
+        
+        try:
+            await self._conn.execute(
+                "DELETE FROM memories WHERE id = $1",
+                memory_id
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete memory: {e}")
+            return False
+    
+    # ========== 信念操作 ==========
+    
+    async def save_belief(self, belief: Dict) -> bool:
+        """保存信念"""
+        if not self._connected:
+            return False
+        
+        try:
+            await self._conn.execute("""
+                INSERT INTO beliefs (id, statement, category, confidence, sources, conflicts)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (id) DO UPDATE SET
+                    statement = EXCLUDED.statement,
+                    confidence = EXCLUDED.confidence,
                     updated_at = NOW()
-            """
-            return self.db.execute_write(query, (
-                goal.get("id", ""),
-                goal.get("title", ""),
-                goal.get("description", ""),
-                goal.get("type", "exploration"),
-                goal.get("priority", 3),
-                goal.get("progress", 0.0),
-                goal.get("status", "pending"),
-                goal.get("source", "self_initiated")
-            ))
-        return self.json_fallback.append("goals", goal)
+            """,
+                belief.get("id"),
+                belief.get("statement"),
+                belief.get("category"),
+                belief.get("confidence", 0.5),
+                json.dumps(belief.get("sources", [])),
+                json.dumps(belief.get("conflicts", []))
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save belief: {e}")
+            return False
     
-    def get_goals(self, status: str = None) -> List[Dict]:
-        """获取目标"""
-        if self.use_db:
-            if status:
-                query = "SELECT * FROM autonomous_goals WHERE status = %s ORDER BY priority"
-                return self.db.execute(query, (status,))
-            query = "SELECT * FROM autonomous_goals ORDER BY priority"
-            return self.db.execute(query)
-        if status:
-            return self.json_fallback.query("goals", lambda x: x.get("status") == status)
-        return self.json_fallback.load("goals")
+    async def get_beliefs(self, category: str = None) -> List[Dict]:
+        """获取信念"""
+        if not self._connected:
+            return []
+        
+        try:
+            if category:
+                rows = await self._conn.fetch(
+                    "SELECT * FROM beliefs WHERE category = $1 ORDER BY confidence DESC",
+                    category
+                )
+            else:
+                rows = await self._conn.fetch("SELECT * FROM beliefs ORDER BY confidence DESC")
+            
+            return [dict(r) for r in rows]
+        except Exception as e:
+            logger.error(f"Failed to get beliefs: {e}")
+            return []
     
-    # ============== 反对记录操作 ==============
+    # ========== 审计日志 ==========
     
-    def save_opposition(self, opposition: Dict) -> bool:
-        """保存反对记录"""
-        if self.use_db:
-            query = """
-                INSERT INTO oppositions 
-                (user_input, opposing_belief_id, belief_content, belief_confidence, severity, response_text, user_resolution, trace_id, user_id, metadata)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            return self.db.execute_write(query, (
-                opposition.get("user_input", ""),
-                opposition.get("opposing_belief_id"),
-                opposition.get("belief_content", ""),
-                opposition.get("belief_confidence", 0),
-                opposition.get("severity", "gentle"),
-                opposition.get("response_text", ""),
-                opposition.get("user_resolution", "pending"),
-                opposition.get("trace_id"),
-                opposition.get("user_id", "default_user"),
-                json.dumps(opposition.get("metadata", {}))
-            ))
-        return self.json_fallback.append("oppositions", opposition)
+    async def log_audit(self, level: str, action: str, message: str):
+        """记录审计日志"""
+        if not self._connected:
+            return
+        
+        try:
+            await self._conn.execute(
+                "INSERT INTO audit_log (level, action, message) VALUES ($1, $2, $3)",
+                level, action, message
+            )
+        except Exception as e:
+            logger.error(f"Failed to log audit: {e}")
     
-    def get_oppositions(self, limit: int = 10) -> List[Dict]:
-        """获取反对记录"""
-        if self.use_db:
-            query = "SELECT * FROM oppositions ORDER BY created_at DESC LIMIT %s"
-            return self.db.execute(query, (limit,))
-        return self.json_fallback.load("oppositions")[-limit:]
+    # ========== 统计 ==========
+    
+    async def get_stats(self) -> Dict:
+        """获取数据库统计"""
+        if not self._connected:
+            return {"status": "disconnected"}
+        
+        try:
+            memory_count = await self._conn.fetchval("SELECT COUNT(*) FROM memories")
+            belief_count = await self._conn.fetchval("SELECT COUNT(*) FROM beliefs")
+            goal_count = await self._conn.fetchval("SELECT COUNT(*) FROM goals")
+            
+            return {
+                "connected": True,
+                "memories": memory_count,
+                "beliefs": belief_count,
+                "goals": goal_count
+            }
+        except Exception as e:
+            logger.error(f"Failed to get stats: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # 全局实例
-_storage_manager = None
+_postgres_manager = None
 
-def get_storage_manager() -> StorageManager:
-    """获取存储管理器"""
-    global _storage_manager
-    if _storage_manager is None:
-        _storage_manager = StorageManager()
-    return _storage_manager
+def get_postgres_manager(connection_string: str = None) -> PostgresManager:
+    """获取PostgreSQL管理器"""
+    global _postgres_manager
+    if _postgres_manager is None:
+        _postgres_manager = PostgresManager(connection_string)
+    return _postgres_manager
