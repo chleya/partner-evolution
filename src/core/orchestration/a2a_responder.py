@@ -63,8 +63,8 @@ class A2AAgentResponder:
             
             # 调用LLM生成专业建议
             try:
-                from src.utils.llm_client import get_llm_client
-                client = get_llm_client()
+                from src.utils.llm_client import MiniMaxClient
+                client = MiniMaxClient()
                 
                 full_prompt = f"""{role_prompt}
 

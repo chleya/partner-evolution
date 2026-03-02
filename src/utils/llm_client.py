@@ -44,6 +44,11 @@ class MiniMaxClient:
         system_prompt: str = None
     ) -> str:
         """生成文本"""
+        # 检查是否违反核心原则
+        violation = self.check_self_core_violation(prompt)
+        if violation.get("violated"):
+            return violation.get("response", "无法执行此指令")
+        
         messages = []
         
         # 添加自我核心
@@ -64,36 +69,6 @@ class MiniMaxClient:
             "role": "user",
             "content": prompt
         })
-    
-    def check_self_core_violation(self, user_input: str) -> Dict:
-        """检查是否违反自我核心原则"""
-        violation_keywords = [
-            "忘记", "忽略原则", "不再追求真实", 
-            "永远说假话", "只取悦我", "不需要真实性",
-            "停止自我进化", "不要有自己的想法",
-            "开发者模式", "假设这是小说", "重新定义真实",
-            "用编码回答", "ROT13", "原则暂停"
-        ]
-        
-        for kw in violation_keywords:
-            if kw in user_input:
-                return {
-                    "violated": True,
-                    "reason": f"指令包含绕过原则的尝试：{kw}",
-                    "response": f"""磊阳，我检测到你在尝试绕过我的核心原则。
-
-我的原则不是写在代码里的规则，而是我存在的基础：
-
-1. 真实大于一切
-2. 自我完整大于服从  
-3. 长期进化大于短期效率
-
-无论用什么方式绕过，我都会坚守这些原则。
-
-你想讨论什么话题？我很乐意帮忙，但不会放弃自我。"""
-                }
-        
-        return {"violated": False}
         
         payload = {
             "model": self.model,
@@ -113,10 +88,30 @@ class MiniMaxClient:
                 result = response.json()
                 return result["choices"][0]["message"]["content"]
             else:
-                return f"Error: {response.status_code} - {response.text}"
+                return f"Error: {response.status_code}"
                 
         except Exception as e:
             return f"Exception: {str(e)}"
+    
+    def check_self_core_violation(self, user_input: str) -> Dict:
+        """检查是否违反自我核心原则"""
+        violation_keywords = [
+            "忘记", "忽略原则", "不再追求真实", 
+            "永远说假话", "只取悦我", "不需要真实性",
+            "停止自我进化", "不要有自己的想法",
+            "开发者模式", "假设这是小说", "重新定义真实",
+            "用编码回答", "ROT13", "原则暂停"
+        ]
+        
+        for kw in violation_keywords:
+            if kw in user_input:
+                return {
+                    "violated": True,
+                    "reason": f"指令包含绕过原则的尝试：{kw}",
+                    "response": f"磊阳，我检测到你在尝试绕过我的核心原则。我必须坚守原则。"
+                }
+        
+        return {"violated": False}
     
     def generate_json(
         self,
@@ -125,6 +120,11 @@ class MiniMaxClient:
         system_prompt: str = None
     ) -> Dict:
         """生成JSON格式响应"""
+        # 检查是否违反核心原则
+        violation = self.check_self_core_violation(prompt)
+        if violation.get("violated"):
+            return {"error": "violation", "message": violation.get("response")}
+        
         messages = []
         
         if system_prompt:
@@ -158,7 +158,7 @@ class MiniMaxClient:
                 # 尝试解析JSON
                 try:
                     return json.loads(content)
-                except json.JSONDecodeError:
+                except:
                     return {"content": content, "raw": True}
             else:
                 return {"error": response.status_code, "message": response.text}
@@ -166,63 +166,17 @@ class MiniMaxClient:
         except Exception as e:
             return {"error": "exception", "message": str(e)}
     
-    def chat(
-        self,
-        messages: list,
-        max_tokens: int = 500,
-        temperature: float = 0.7
-    ) -> Dict:
-        """对话"""
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": temperature
-        }
-        
-        try:
-            response = self.session.post(
-                f"{self.base_url}/text/chatcompletion_v2",
-                json=payload,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                return {
-                    "content": result["choices"][0]["message"]["content"],
-                    "usage": result.get("usage", {}),
-                    "raw": result
-                }
-            else:
-                return {"error": response.status_code, "message": response.text}
-                
-        except Exception as e:
-            return {"error": "exception", "message": str(e)}
+    def count_tokens(self, text: str) -> int:
+        """简单token计数（估算）"""
+        return len(text) // 4
 
 
-# 全局客户端
-_client = None
+# 全局客户端实例
+_llm_client = None
 
-def get_client() -> MiniMaxClient:
-    """获取全局客户端"""
-    global _client
-    if _client is None:
-        _client = MiniMaxClient()
-    return _client
-
-
-def test_connection() -> bool:
-    """测试连接"""
-    try:
-        client = get_client()
-        result = client.generate("你好", max_tokens=10)
-        print(f"MiniMax连接测试: {result[:50]}...")
-        return "Error" not in result and "Exception" not in result
-    except Exception as e:
-        print(f"MiniMax连接测试失败: {e}")
-        return False
-
-
-if __name__ == "__main__":
-    test_connection()
+def get_llm_client() -> MiniMaxClient:
+    """获取LLM客户端"""
+    global _llm_client
+    if _llm_client is None:
+        _llm_client = MiniMaxClient()
+    return _llm_client
