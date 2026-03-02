@@ -49,51 +49,48 @@ class A2AAgentResponder:
             logger.info(f"{self.agent_name} responded with belief: {belief.get('content', '')[:30]}...")
     
     def _generate_response_belief(self) -> dict:
-        """生成响应belief - 每个Agent用自己的视角"""
+        """生成响应belief - 每个Agent用自己的专属视角"""
         beliefs = self.storage.get_beliefs()
         
         if not beliefs:
             return None
         
-        # 根据Agent选择不同的belief - 差异化策略
-        if self.agent_name == "Evo-Swarm":
-            # Planner: 选择规划/学习/成长相关 - 置信度0.73-0.82
-            candidates = [
-                b for b in beliefs 
-                if any(kw in b.get("content", "") for kw in ["学习", "优化", "持续", "改进", "进化"])
-                and b.get("confidence", 0) < 0.85
-            ]
-            if candidates:
-                return {"content": candidates[0].get("content"), "confidence": candidates[0].get("confidence")}
+        # 严格的专属关键词过滤
+        agent_keywords = {
+            "Evo-Swarm": ["学习", "进化", "持续", "成长", "自适应", "迭代"],
+            "NeuralSite": ["代码", "性能", "效率", "架构", "检索", "缓存", "可读性", "工程"],
+            "VisualCoT": ["感知", "观察", "视觉", "数据", "输入", "人格", "上下文", "多模态"]
+        }
         
-        elif self.agent_name == "NeuralSite":
-            # Executor: 选择效率/性能/架构相关 - 置信度0.77-0.80
-            candidates = [
-                b for b in beliefs 
-                if any(kw in b.get("content", "") for kw in ["效率", "性能", "代码", "架构", "检索"])
-                and b.get("confidence", 0) < 0.85
-            ]
-            if candidates:
-                return {"content": candidates[0].get("content"), "confidence": candidates[0].get("confidence")}
+        my_keywords = agent_keywords.get(self.agent_name, [])
         
-        elif self.agent_name == "VisualCoT":
-            # Perceiver: 选择记忆/数据/观察相关 - 置信度0.78-0.90
-            candidates = [
-                b for b in beliefs 
-                if any(kw in b.get("content", "") for kw in ["记忆", "数据", "信息", "观察", "人格"])
-                and b.get("confidence", 0) < 0.90
-            ]
-            if candidates:
-                return {"content": candidates[0].get("content"), "confidence": candidates[0].get("confidence")}
+        # 找最匹配的信念
+        candidates = []
+        for b in beliefs:
+            content = b.get("content", "")
+            confidence = b.get("confidence", 0)
+            
+            # 至少包含一个专属关键词
+            if any(kw in content for kw in my_keywords):
+                # 评分：关键词命中数 * 0.3 + confidence * 0.7
+                hit_count = sum(1 for kw in my_keywords if kw in content)
+                score = hit_count * 0.3 + confidence * 0.7
+                candidates.append((score, b))
         
-        # 默认返回置信度较低的（让高置信度保留给最后MAR融合）
+        if candidates:
+            # 选最高分的
+            candidates.sort(reverse=True)
+            selected = candidates[0][1]
+            return {"content": selected.get("content"), "confidence": selected.get("confidence")}
+        
+        # 无匹配时fallback到最低confidence的（让它有成长空间）
         low_conf = [b for b in beliefs if b.get("confidence", 0) < 0.80]
         if low_conf:
             return {"content": low_conf[0].get("content"), "confidence": low_conf[0].get("confidence")}
         
         # 兜底
         if beliefs:
-            b = beliefs[-1]  # 取置信度最低的
+            b = beliefs[-1]
             return {"content": b.get("content"), "confidence": b.get("confidence")}
         
         return None
