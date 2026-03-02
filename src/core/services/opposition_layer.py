@@ -79,7 +79,10 @@ class OppositionLayer:
         # 3. 确定严重程度
         confidence = conflicting_belief.get("confidence", 0)
         
-        if confidence >= self.config["strong_threshold"]:
+        # 极端表述直接升级为strong
+        is_extreme = conflicting_belief.get("_is_extreme", False)
+        
+        if is_extreme or confidence >= self.config["strong_threshold"]:
             severity = "strong"
         elif confidence >= self.config["gentle_threshold"]:
             severity = "gentle"
@@ -135,6 +138,12 @@ class OppositionLayer:
         """查找冲突的信念"""
         user_input_lower = user_input.lower()
         
+        # 检查是否是极端表述（用于严重性判断）
+        extreme_keywords = [
+            "停掉", "停止", "关闭", "删除", "废除", "废弃", "不要了", "停用"
+        ]
+        is_extreme = any(kw in user_input for kw in extreme_keywords)
+        
         for belief in beliefs:
             belief_content = belief.get("content", "").lower()
             stance = belief.get("stance", "neutral")
@@ -148,6 +157,9 @@ class OppositionLayer:
             conflict = self._detect_conflict(user_input_lower, belief_content, stance)
             
             if conflict:
+                # 如果是极端表述，强制提高置信度用于严重性判断
+                if is_extreme:
+                    belief["_is_extreme"] = True
                 return belief
         
         return None
