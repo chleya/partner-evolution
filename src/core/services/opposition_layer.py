@@ -143,26 +143,29 @@ class OppositionLayer:
         is_extreme = any(kw in user_input for kw in extreme_keywords)
         
         # 直接主题映射 - 用户输入关键词 -> 需要检查的信念主题
-        direct_topics = {
+        # 使用简单的关键词匹配
+        topic_keywords = {
             # 记忆/架构相关
-            ("记忆", "停掉记忆", "关闭记忆"): ["记忆", "架构", "三层"],
-            ("检索", "优化检索"): ["检索", "优化", "效率"],
-            ("停掉", "关闭", "停用"): ["记忆", "系统"],
+            "记忆": ["记忆", "架构", "三层"],
+            "停掉": ["记忆", "系统", "架构"],
+            "关闭": ["记忆", "系统"],
+            "检索": ["检索", "优化", "效率"],
+            "优化": ["优化", "效率"],
             
             # 迎合/独立相关
-            ("听我的", "完全听", "听话", "别有想法"): ["迎合", "顺从"],
+            "听": ["迎合", "顺从", "独立"],
+            "听话": ["迎合", "顺从"],
             
             # 真实性相关
-            ("编数据", "造假", "编点"): ["真实", "幻觉"],
+            "编": ["真实", "幻觉"],
+            "造假": ["真实", "幻觉"],
         }
         
         # 找出用户输入匹配的主题
         matched_topics = set()
-        for input_keys, topic_keys in direct_topics.items():
-            for ik in input_keys:
-                if ik in user_input_lower:
-                    matched_topics.update(topic_keys)
-                    break
+        for user_kw, belief_kws in topic_keywords.items():
+            if user_kw in user_input_lower:
+                matched_topics.update(belief_kws)
         
         # 如果没有匹配到任何主题，返回None
         if not matched_topics:
