@@ -86,9 +86,13 @@ class MiniMaxClient:
             
             if response.status_code == 200:
                 result = response.json()
-                return result["choices"][0]["message"]["content"]
+                content = result["choices"][0]["message"]["content"]
+                # 尝试处理编码
+                if isinstance(content, bytes):
+                    content = content.decode('utf-8', errors='ignore')
+                return content if content else "Empty response"
             else:
-                return f"Error: {response.status_code}"
+                return f"Error: {response.status_code}: {response.text[:100]}"
                 
         except Exception as e:
             return f"Exception: {str(e)}"
