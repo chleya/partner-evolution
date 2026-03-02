@@ -6,6 +6,7 @@ import logging
 from typing import Any, Dict, List, Optional
 from enum import Enum
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -307,6 +308,18 @@ class SupervisorAgent:
             logger.warning(f"Opposition check failed: {e}")
         # ====== 反对层检查结束 ======
         
+        # ====== A2A用户任务咨询 ======
+        # 复杂任务走内部讨论
+        try:
+            if self._should_consult_agents(description):
+                logger.info(f"Supervisor: Consulting internal agents for complex task...")
+                collective_result = await self._consult_agents(description)
+                if collective_result:
+                    return collective_result
+        except Exception as e:
+            logger.warning(f"A2A consultation failed: {e}")
+        # ====== A2A咨询结束 ======
+        
         # 路由任务
         results = await self.route_task(task)
         
@@ -329,6 +342,82 @@ class SupervisorAgent:
         }
         
         return combined_result
+    
+    def _should_consult_agents(self, user_input: str) -> bool:
+        """判断是否需要咨询内部Agent"""
+        # 复杂任务关键词
+        complex_keywords = [
+            "重构", "设计", "架构", "规划", "分析", "优化", 
+            "创建", "实现", "方案", "建议", "评估", "review"
+        ]
+        
+        # 检查是否包含复杂任务关键词
+        return any(kw in user_input for kw in complex_keywords)
+    
+    async def _consult_agents(self, user_input: str) -> Optional[Dict]:
+        """咨询内部Agent获取集体意见"""
+        try:
+            from src.core.orchestration.a2a_bus import get_a2a_bus, A2AMessage
+            
+            bus = get_a2a_bus()
+            task_id = f"user-task-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+            
+            # 收集响应
+            responses = []
+            
+            def on_response(msg):
+                if msg.type in ["share_belief", "propose", "response"]:
+                    responses.append({
+                        "agent": msg.from_agent,
+                        "content": msg.payload.get("content", ""),
+                        "type": msg.type
+                    })
+            
+            bus.subscribe("all", on_response)
+            
+            # 广播用户任务咨询
+            msg = A2AMessage(
+                from_agent="Supervisor",
+                to_agent="all",
+                type="user_task_consult",
+                payload={
+                    "user_input": user_input,
+                    "task_id": task_id
+                },
+                task_id=task_id
+            )
+            bus._publish(msg)
+            
+            # 等待响应
+            import asyncio
+            await asyncio.sleep(5)
+            
+            if not responses:
+                return None
+            
+            # 生成集体响应
+            collective_suggestions = "\n".join([
+                f"- {r['agent']}: {r['content'][:80]}..."
+                for r in responses[:3]
+            ])
+            
+            return {
+                "task_id": task_id,
+                "description": user_input,
+                "task_type": "consultation",
+                "success": True,
+                "results": [],
+                "type": "collective_consultation",
+                "consultation": {
+                    "summary": f"经过内部讨论，收集到 {len(responses)} 条建议",
+                    "suggestions": collective_suggestions,
+                    "response": f"关于「{user_input[:30]}...」，我与团队讨论后建议：{responses[0].get('content', '需要进一步分析')[:100]}"
+                }
+            }
+            
+        except Exception as e:
+            logger.warning(f"Agent consultation failed: {e}")
+            return None
     
     async def get_status(self) -> Dict:
         """获取所有适配器状态"""
