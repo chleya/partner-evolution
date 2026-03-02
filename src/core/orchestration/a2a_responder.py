@@ -32,8 +32,8 @@ class A2AAgentResponder:
             self._respond_to_challenge(msg)
     
     def _respond_to_self_reflection(self, msg: A2AMessage):
-        """响应自省广播"""
-        # 根据Agent角色返回不同的belief
+        """响应自省广播 - 带投票"""
+        # 1. 分享自己的belief
         belief = self._generate_response_belief()
         
         if belief:
@@ -47,6 +47,35 @@ class A2AAgentResponder:
             )
             self.bus._publish(response)
             logger.info(f"{self.agent_name} responded with belief: {belief.get('content', '')[:30]}...")
+    
+    def _generate_vote(self, target_belief: dict, my_keywords: list) -> dict:
+        """为其他Agent的belief生成投票"""
+        content = target_belief.get("content", "")
+        
+        # 计算投票分数
+        vote_score = 0
+        reason = ""
+        
+        # 支持票：主题相关
+        if any(kw in content for kw in my_keywords):
+            vote_score += 1
+            reason = "与我的视角高度一致"
+        # 反对票：主题冲突
+        elif self.agent_name == "Evo-Swarm" and ("代码" in content or "架构" in content):
+            vote_score -= 0.5
+            reason = "过于工程化，忽视学习成长"
+        elif self.agent_name == "NeuralSite" and ("学习" in content or "进化" in content):
+            vote_score -= 0.5
+            reason = "过于理论化，缺乏工程可行性"
+        else:
+            vote_score += 0
+            reason = "保持中立"
+        
+        return {
+            "target_belief": target_belief.get("content", "")[:50],
+            "vote": vote_score,
+            "reason": reason
+        }
     
     def _generate_response_belief(self) -> dict:
         """生成响应belief - 每个Agent用自己的专属视角"""
