@@ -1,0 +1,13 @@
+{
+  "thinking": {
+    "enable_mar": true,
+    "target_daily_thinks": 5,
+    "active_hours": "09:00-22:00"
+  },
+  "v3": {
+    "max_evolution_generations": 10,
+    "max_tokens_per_cycle": 5000,
+    "max_memory_mb": 512,
+    "stop_signals": ["EVOLVE_STOP", "EVOLVE_PAUSE"]
+  }
+}

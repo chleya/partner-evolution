@@ -19,7 +19,7 @@ class VectorStore:
     """
     向量存储管理器 v2.0
     支持向量添加、搜索、更新、持久化
-    新增：缓存、批量操作、性能优化
+    新增：缓存、批量操作、性能优化、健康检查
     """
 
     def __init__(self, dimension: int = 384, use_cache: bool = True):
@@ -28,6 +28,10 @@ class VectorStore:
         self.index_built = False
         self._cache: Dict[str, List[Dict]] = {}  # 查询缓存
         self._cache_ttl = 300  # 缓存有效期（秒）
+        
+        # 健康状态标记 - 修复C-002静默失败问题
+        self._is_healthy = True
+        self._degradation_reason = None
         self._cache_timestamp: Dict[str, float] = {}
         self.use_cache = use_cache
         self._batch_buffer: List[tuple] = []  # 批量添加缓冲
@@ -300,3 +304,30 @@ class VectorStore:
         """清空所有向量"""
         self.vectors.clear()
         self.index_built = False
+    
+    # ====== 健康检查 - 修复C-002静默失败 ======
+    
+    def mark_degraded(self, reason: str):
+        """标记服务降级"""
+        self._is_healthy = False
+        self._degradation_reason = reason
+        logger.warning(f"VectorStore degraded: {reason}")
+    
+    def mark_healthy(self):
+        """标记服务健康"""
+        self._is_healthy = True
+        self._degradation_reason = None
+        logger.info("VectorStore restored to healthy state")
+    
+    def is_healthy(self) -> bool:
+        """检查服务健康状态"""
+        return self._is_healthy
+    
+    def get_health_status(self) -> Dict:
+        """获取健康状态"""
+        return {
+            "healthy": self._is_healthy,
+            "degradation_reason": self._degradation_reason,
+            "vector_count": len(self.vectors),
+            "cache_size": len(self._cache)
+        }
