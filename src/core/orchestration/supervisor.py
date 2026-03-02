@@ -421,6 +421,16 @@ class SupervisorAgent:
 • 解释 / 为什么 / 讲讲理由 - 了解更多
 """
             
+            # C-001: 输出自检
+            try:
+                from src.core.services.self_check import get_self_check
+                checker = get_self_check()
+                check_result = checker.check(response_text)
+                if check_result.get("needs_revision"):
+                    logger.info(f"Self-check found {len(check_result.get('issues', []))} issues")
+            except Exception as e:
+                logger.warning(f"Self-check failed: {e}")
+            
             return {
                 "task_id": task_id,
                 "description": user_input,
