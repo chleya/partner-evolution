@@ -142,6 +142,18 @@ class PureAutonomousCycle:
         
         # 构建上下文
         context_parts = []
+        
+        # 添加外部世界上下文
+        try:
+            from src.core.services.external_world import get_external_fetcher
+            fetcher = get_external_fetcher()
+            external_context = fetcher.get_context_for_cycle()
+            if external_context:
+                context_parts.append(external_context)
+        except Exception as e:
+            logger.warning(f"Failed to fetch external world: {e}")
+        
+        # 添加记忆上下文
         for m in all_memories[:15]:
             content = m.get("content", "")
             tier = m.get("tier", "unknown")
