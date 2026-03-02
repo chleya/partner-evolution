@@ -7,5 +7,635 @@
     "confidence": 1.0,
     "importance": 0.5,
     "metadata": {}
+  },
+  {
+    "id": "conv_115b0ae7",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "优化AI助手能力，让它成为真正的伙伴",
+    "confidence": 0.85,
+    "importance": 0.85,
+    "metadata": {
+      "user": "Chen Leiyang",
+      "intent": "enhancement",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:14:28.044693+00:00"
+    }
+  },
+  {
+    "id": "conv_cea9dbf3",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "优化AI助手能力，让它成为真正的伙伴",
+    "confidence": 0.85,
+    "importance": 0.85,
+    "metadata": {
+      "user": "Chen Leiyang",
+      "intent": "enhancement",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:14:44.189493+00:00"
+    }
+  },
+  {
+    "id": "conv_798dbf74",
+    "tier": "core",
+    "type": "conversation",
+    "content": "核心配置：AI助手必须在每天9点主动签到",
+    "confidence": 0.95,
+    "importance": 0.95,
+    "metadata": {
+      "user": "System",
+      "intent": "config",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:18:30.266920+00:00"
+    }
+  },
+  {
+    "id": "conv_02b9ccdf",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "昨天的项目进度会议讨论了Stage4部署",
+    "confidence": 0.7,
+    "importance": 0.7,
+    "metadata": {
+      "user": "Chen Leiyang",
+      "intent": "discussion",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:18:30.321899+00:00"
+    }
+  },
+  {
+    "id": "conv_39e43f48",
+    "tier": "archival",
+    "type": "conversation",
+    "content": "一个月前的技术调研：选择PostgreSQL还是MongoDB",
+    "confidence": 0.2,
+    "importance": 0.5,
+    "metadata": {
+      "user": "Chen Leiyang",
+      "intent": "research",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:18:30.325899+00:00"
+    }
+  },
+  {
+    "id": "conv_eb6c3b6e",
+    "tier": "archival",
+    "type": "conversation",
+    "content": "临时测试任务",
+    "confidence": 0.5,
+    "importance": 0.5,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "pending",
+      "timestamp": "2026-03-02T04:18:30.328899+00:00"
+    }
+  },
+  {
+    "id": "conv_d7338984",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 0",
+    "confidence": 0.9900000000000001,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:18:30.338898+00:00"
+    }
+  },
+  {
+    "id": "conv_e42c9f61",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 1",
+    "confidence": 0.36423841059602646,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:18:30.341899+00:00"
+    }
+  },
+  {
+    "id": "conv_c9738510",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 2",
+    "confidence": 0.2,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:18:30.345376+00:00"
+    }
+  },
+  {
+    "id": "conv_6a875496",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 3",
+    "confidence": 0.2,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:18:30.347572+00:00"
+    }
+  },
+  {
+    "id": "conv_e04dde87",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 4",
+    "confidence": 0.2,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:18:30.350295+00:00"
+    }
+  },
+  {
+    "id": "conv_13a8cd7b",
+    "tier": "core",
+    "type": "conversation",
+    "content": "核心配置：AI助手必须在每天9点主动签到",
+    "confidence": 0.95,
+    "importance": 0.95,
+    "metadata": {
+      "user": "System",
+      "intent": "config",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:20:18.567478+00:00"
+    }
+  },
+  {
+    "id": "conv_5822226e",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "昨天的项目进度会议讨论了Stage4部署",
+    "confidence": 0.7,
+    "importance": 0.7,
+    "metadata": {
+      "user": "Chen Leiyang",
+      "intent": "discussion",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:20:18.593336+00:00"
+    }
+  },
+  {
+    "id": "conv_d320fb96",
+    "tier": "archival",
+    "type": "conversation",
+    "content": "一个月前的技术调研：选择PostgreSQL还是MongoDB",
+    "confidence": 0.2,
+    "importance": 0.5,
+    "metadata": {
+      "user": "Chen Leiyang",
+      "intent": "research",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:20:18.596351+00:00"
+    }
+  },
+  {
+    "id": "conv_181ae852",
+    "tier": "archival",
+    "type": "conversation",
+    "content": "临时测试任务",
+    "confidence": 0.5,
+    "importance": 0.5,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "pending",
+      "timestamp": "2026-03-02T04:20:18.602854+00:00"
+    }
+  },
+  {
+    "id": "conv_869721bf",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 0",
+    "confidence": 0.9900000000000001,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:20:18.615892+00:00"
+    }
+  },
+  {
+    "id": "conv_5f3cc20b",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 1",
+    "confidence": 0.6004964833286422,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:20:18.620664+00:00"
+    }
+  },
+  {
+    "id": "conv_a8979cc9",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 2",
+    "confidence": 0.3642384105960266,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:20:18.623664+00:00"
+    }
+  },
+  {
+    "id": "conv_30b63232",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 3",
+    "confidence": 0.22093321682437167,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:20:18.626661+00:00"
+    }
+  },
+  {
+    "id": "conv_e9f3c89f",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "测试记忆 4",
+    "confidence": 0.2,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Test",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:20:18.629661+00:00"
+    }
+  },
+  {
+    "id": "conv_9be9d7d3",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "开始Week 4测试",
+    "confidence": 0.8,
+    "importance": 0.8,
+    "metadata": {
+      "user": "Chen",
+      "intent": "test",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:31:22.969381+00:00"
+    }
+  },
+  {
+    "id": "conv_881802e1",
+    "tier": "recall",
+    "type": "conversation",
+    "content": "MAR反思结果: 综合3个视角的观点，形成平衡建议",
+    "confidence": 0.81,
+    "importance": 0.81,
+    "metadata": {
+      "user": "System",
+      "intent": "reflection",
+      "outcome": "completed",
+      "timestamp": "2026-03-02T04:31:22.981382+00:00"
+    }
+  },
+  {
+    "id": "task_e8d16f7e",
+    "tier": "core",
+    "type": "task",
+    "content": "实现记忆系统v2.0",
+    "confidence": 0.8,
+    "importance": 0.8,
+    "metadata": {
+      "project": "Partner-Evolution",
+      "status": "in_progress",
+      "progress": 0.6,
+      "started_at": "2026-03-02T04:14:28.086857+00:00",
+      "blocking_issues": []
+    }
+  },
+  {
+    "id": "task_d7f37943",
+    "tier": "core",
+    "type": "task",
+    "content": "实现记忆系统v2.0",
+    "confidence": 0.8,
+    "importance": 0.8,
+    "metadata": {
+      "project": "Partner-Evolution",
+      "status": "in_progress",
+      "progress": 0.6,
+      "started_at": "2026-03-02T04:14:44.219492+00:00",
+      "blocking_issues": []
+    }
+  },
+  {
+    "id": "task_72031abf",
+    "tier": "core",
+    "type": "task",
+    "content": "完成集成测试",
+    "confidence": 0.8,
+    "importance": 0.8,
+    "metadata": {
+      "project": "Partner-Evolution",
+      "status": "in_progress",
+      "progress": 0.0,
+      "started_at": "2026-03-02T04:31:22.972381+00:00",
+      "blocking_issues": []
+    }
+  },
+  {
+    "id": "task_86f3bca5",
+    "tier": "core",
+    "type": "task",
+    "content": "完成工作流: 分析NeuralSite截图，结合Evo-Swarm给出部署方案",
+    "confidence": 0.8,
+    "importance": 0.8,
+    "metadata": {
+      "project": "Partner-Evolution",
+      "status": "completed",
+      "progress": 0.0,
+      "started_at": "2026-03-02T04:31:22.984356+00:00",
+      "blocking_issues": []
+    }
+  },
+  {
+    "id": "entity_f864e7ff",
+    "tier": "core",
+    "type": "entity",
+    "content": "NeuralSite (project)",
+    "confidence": 1.0,
+    "importance": 0.7,
+    "metadata": {
+      "name": "NeuralSite",
+      "entity_type": "project",
+      "aliases": [
+        "智网六维时空施工管理系统",
+        "施工管理系统"
+      ],
+      "attributes": {
+        "location": "F:\\drawing_3d",
+        "stage": "Stage4",
+        "status": "active"
+      }
+    }
+  },
+  {
+    "id": "entity_c2919bfb",
+    "tier": "core",
+    "type": "entity",
+    "content": "Evo-Swarm (project)",
+    "confidence": 1.0,
+    "importance": 0.7,
+    "metadata": {
+      "name": "Evo-Swarm",
+      "entity_type": "project",
+      "aliases": [
+        "演化智能体",
+        "思维链系统"
+      ],
+      "attributes": {
+        "location": "F:\\skill\\evo_swarm",
+        "github": "https://github.com/chleya/Evo-Swarm"
+      }
+    }
+  },
+  {
+    "id": "entity_07bec132",
+    "tier": "core",
+    "type": "entity",
+    "content": "NeuralSite (project)",
+    "confidence": 1.0,
+    "importance": 0.7,
+    "metadata": {
+      "name": "NeuralSite",
+      "entity_type": "project",
+      "aliases": [
+        "智网六维时空施工管理系统",
+        "施工管理系统"
+      ],
+      "attributes": {
+        "location": "F:\\drawing_3d",
+        "stage": "Stage4",
+        "status": "active"
+      }
+    }
+  },
+  {
+    "id": "entity_b88e6852",
+    "tier": "core",
+    "type": "entity",
+    "content": "Evo-Swarm (project)",
+    "confidence": 1.0,
+    "importance": 0.7,
+    "metadata": {
+      "name": "Evo-Swarm",
+      "entity_type": "project",
+      "aliases": [
+        "演化智能体",
+        "思维链系统"
+      ],
+      "attributes": {
+        "location": "F:\\skill\\evo_swarm",
+        "github": "https://github.com/chleya/Evo-Swarm"
+      }
+    }
+  },
+  {
+    "id": "entity_76dc8287",
+    "tier": "core",
+    "type": "entity",
+    "content": "70%边界理论 (concept)",
+    "confidence": 1.0,
+    "importance": 0.7,
+    "metadata": {
+      "name": "70%边界理论",
+      "entity_type": "concept",
+      "aliases": [
+        "70%边界理论"
+      ],
+      "attributes": {
+        "source": "Chen Leiyang"
+      }
+    }
+  },
+  {
+    "id": "entity_f3811889",
+    "tier": "core",
+    "type": "entity",
+    "content": "测试概念 (concept)",
+    "confidence": 0.33,
+    "importance": 0.7,
+    "metadata": {
+      "name": "测试概念",
+      "entity_type": "concept",
+      "aliases": [
+        "测试概念"
+      ],
+      "attributes": {
+        "source": "test"
+      }
+    }
+  },
+  {
+    "id": "entity_46b57772",
+    "tier": "core",
+    "type": "entity",
+    "content": "70%边界理论 (concept)",
+    "confidence": 1.0,
+    "importance": 0.7,
+    "metadata": {
+      "name": "70%边界理论",
+      "entity_type": "concept",
+      "aliases": [
+        "70%边界理论"
+      ],
+      "attributes": {
+        "source": "Chen Leiyang"
+      }
+    }
+  },
+  {
+    "id": "entity_b53f379b",
+    "tier": "core",
+    "type": "entity",
+    "content": "测试概念 (concept)",
+    "confidence": 0.33,
+    "importance": 0.7,
+    "metadata": {
+      "name": "测试概念",
+      "entity_type": "concept",
+      "aliases": [
+        "测试概念"
+      ],
+      "attributes": {
+        "source": "test"
+      }
+    }
+  },
+  {
+    "id": "entity_d54a422b",
+    "tier": "core",
+    "type": "entity",
+    "content": "NeuralSite (project)",
+    "confidence": 0.95,
+    "importance": 0.7,
+    "metadata": {
+      "name": "NeuralSite",
+      "entity_type": "project",
+      "aliases": [
+        "智网"
+      ],
+      "attributes": {
+        "stage": "Stage4"
+      }
+    }
+  },
+  {
+    "id": "entity_cb405ec0",
+    "tier": "core",
+    "type": "entity",
+    "content": "Evo-Swarm (project)",
+    "confidence": 0.95,
+    "importance": 0.7,
+    "metadata": {
+      "name": "Evo-Swarm",
+      "entity_type": "project",
+      "aliases": [
+        "演化智能体"
+      ],
+      "attributes": {
+        "status": "active"
+      }
+    }
+  },
+  {
+    "id": "entity_3f825f08",
+    "tier": "core",
+    "type": "entity",
+    "content": "Partner-Evolution (project)",
+    "confidence": 0.9,
+    "importance": 0.7,
+    "metadata": {
+      "name": "Partner-Evolution",
+      "entity_type": "project",
+      "aliases": [
+        "PE"
+      ],
+      "attributes": {
+        "phase": "Week4"
+      }
+    }
+  },
+  {
+    "id": "rel_37",
+    "tier": "core",
+    "type": "relation",
+    "content": "NeuralSite --[collaborates_with]--> Evo-Swarm",
+    "confidence": 0.8,
+    "importance": 0.6,
+    "metadata": {
+      "from": "NeuralSite",
+      "to": "Evo-Swarm",
+      "relation_type": "collaborates_with",
+      "description": "Evo-Swarm提供思维链能力支撑NeuralSite"
+    }
+  },
+  {
+    "id": "rel_38",
+    "tier": "core",
+    "type": "relation",
+    "content": "NeuralSite --[collaborates_with]--> Evo-Swarm",
+    "confidence": 0.8,
+    "importance": 0.6,
+    "metadata": {
+      "from": "NeuralSite",
+      "to": "Evo-Swarm",
+      "relation_type": "collaborates_with",
+      "description": "Evo-Swarm提供思维链能力支撑NeuralSite"
+    }
+  },
+  {
+    "id": "cap_vector_search",
+    "tier": "core",
+    "type": "capability",
+    "content": "能力: vector_search",
+    "confidence": 0.8,
+    "importance": 0.8,
+    "metadata": {
+      "capability": "vector_search",
+      "level": 3,
+      "last_used": "2026-03-02T04:14:44.224119+00:00"
+    }
+  },
+  {
+    "id": "cap_active_thinking",
+    "tier": "core",
+    "type": "capability",
+    "content": "能力: active_thinking",
+    "confidence": 0.32,
+    "importance": 0.8,
+    "metadata": {
+      "capability": "active_thinking",
+      "level": 1,
+      "last_used": "2026-03-02T04:31:22.976383+00:00"
+    }
   }
 ]

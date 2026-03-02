@@ -183,21 +183,34 @@ class StorageManager:
     def __init__(self, config: DBConfig = None):
         self.config = config
         
-        # 优先尝试PostgreSQL
-        if os.getenv("USE_DB", "false").lower() == "true" and POSTGRES_AVAILABLE:
-            self.db = PostgresManager(config)
-            self.use_db = self.db.is_connected()
+        # 自动探测PostgreSQL连接（自动降级）
+        self.use_db = False
+        self.db = None
+        
+        # 尝试连接PostgreSQL
+        if POSTGRES_AVAILABLE:
+            try:
+                self.db = PostgresManager(config)
+                if self.db.is_connected():
+                    self.use_db = True
+                    logger.info("PostgreSQL connected, using DB storage")
+                else:
+                    logger.warning("PostgreSQL connection failed, using JSON fallback")
+                    self.db = None
+            except Exception as e:
+                logger.warning(f"PostgreSQL init failed: {e}, using JSON fallback")
+                self.db = None
         else:
-            self.db = None
-            self.use_db = False
+            logger.info("PostgreSQL driver not available, using JSON fallback")
         
         # 降级方案
         self.json_fallback = JSONFallback()
         
+        # 记录启动日志
         if self.use_db:
-            logger.info("Using PostgreSQL storage")
+            logger.info("Storage: PostgreSQL mode")
         else:
-            logger.info("Using JSON fallback storage")
+            logger.info("Storage: JSON fallback mode")
     
     # ============== 记忆操作 ==============
     

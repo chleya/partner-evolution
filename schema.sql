@@ -184,46 +184,56 @@ COMMENT ON TABLE audit_logs IS '操作审计日志';
 -- v2.1/v2.2 新增表
 -- =====================================================
 
--- 信念表（v2.2自主意识准备）
+-- 信念表（v2.2自主意识）
 CREATE TABLE IF NOT EXISTS beliefs (
     id VARCHAR(100) PRIMARY KEY,
     content TEXT NOT NULL,
     belief_type VARCHAR(50) NOT NULL CHECK (belief_type IN ('factual', 'value', 'prediction', 'preference')),
     confidence FLOAT DEFAULT 0.5 CHECK (confidence >= 0 AND confidence <= 1),
-    evidence JSONB DEFAULT '[]',
-    stance VARCHAR(20) DEFAULT 'neutral',
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'challenged', 'retired')),
+    stance VARCHAR(32) DEFAULT 'neutral' CHECK (stance IN ('positive', 'negative', 'neutral', 'exploratory')),
+    source_type VARCHAR(32) DEFAULT 'self_reflection' CHECK (source_type IN ('user_input', 'self_reflection', 'external_knowledge')),
+    source_id TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
-    challenge_history JSONB DEFAULT '[]'
+    version INTEGER DEFAULT 1,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'challenged', 'retired')),
+    challenge_history JSONB DEFAULT '[]',
+    metadata JSONB DEFAULT '{}'
 );
 
 CREATE INDEX IF NOT EXISTS belief_status_idx ON beliefs (status);
 CREATE INDEX IF NOT EXISTS belief_confidence_idx ON beliefs (confidence DESC);
 CREATE INDEX IF NOT EXISTS belief_type_idx ON beliefs (belief_type);
+CREATE INDEX IF NOT EXISTS belief_source_idx ON beliefs (source_type, source_id);
 
--- 自主目标表（v2.2目标引擎准备）
+-- 自主目标表（v2.2目标引擎）
 CREATE TABLE IF NOT EXISTS autonomous_goals (
     id VARCHAR(100) PRIMARY KEY,
     title VARCHAR(500) NOT NULL,
     description TEXT,
     goal_type VARCHAR(50) NOT NULL CHECK (goal_type IN ('exploration', 'optimization', 'defense')),
-    priority INTEGER DEFAULT 3 CHECK (priority >= 1 AND priority <= 5),
-    progress FLOAT DEFAULT 0.0 CHECK (progress >= 0 AND progress <= 1),
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'paused', 'cancelled')),
-    source VARCHAR(50) DEFAULT 'self_initiated',
+    priority INTEGER DEFAULT 3 CHECK (priority >= 1 AND priority <= 10),
+    status VARCHAR(32) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'paused', 'cancelled', 'achieved', 'abandoned')),
+    horizon VARCHAR(32) DEFAULT 'medium' CHECK (horizon IN ('short', 'medium', 'long')),
+    owner_type VARCHAR(32) DEFAULT 'self' CHECK (owner_type IN ('self', 'user', 'joint')),
+    created_from TEXT,
+    deadline TIMESTAMP,
+    progress FLOAT DEFAULT 0.0 CHECK (progress >= 0 AND progress <= 100),
     curiosity_score FLOAT DEFAULT 0.5,
     importance_score FLOAT DEFAULT 0.5,
     feasibility_score FLOAT DEFAULT 0.5,
     resource_estimate INTEGER DEFAULT 5,
+    iterations INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
-    completed_at TIMESTAMP
+    completed_at TIMESTAMP,
+    metadata JSONB DEFAULT '{}'
 );
 
 CREATE INDEX IF NOT EXISTS goal_status_idx ON autonomous_goals (status);
 CREATE INDEX IF NOT EXISTS goal_priority_idx ON autonomous_goals (priority);
 CREATE INDEX IF NOT EXISTS goal_type_idx ON autonomous_goals (goal_type);
+CREATE INDEX IF NOT EXISTS goal_horizon_idx ON autonomous_goals (horizon);
 
 -- 版本历史表（v3.0递归进化准备）
 CREATE TABLE IF NOT EXISTS version_history (

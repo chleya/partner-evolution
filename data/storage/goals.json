@@ -1,0 +1,22 @@
+[
+  {
+    "id": "goal_001",
+    "title": "完成v2.1存储层升级",
+    "description": "实现PostgreSQL存储 + 自动降级",
+    "type": "optimization",
+    "priority": 1,
+    "status": "in_progress",
+    "horizon": "short",
+    "progress": 60.0
+  },
+  {
+    "id": "goal_002",
+    "title": "实现Pure Autonomous Cycle",
+    "description": "让系统在无人交互时也能自省并形成主张",
+    "type": "exploration",
+    "priority": 2,
+    "status": "pending",
+    "horizon": "medium",
+    "progress": 0.0
+  }
+]
