@@ -100,9 +100,10 @@ class SupervisorAgent:
         TaskType.COORDINATE: [ProjectRole.PLANNER, ProjectRole.EXECUTOR, ProjectRole.PERCEIVER],
     }
     
-    def __init__(self, adapters: Dict[str, ProjectAdapter] = None):
+    def __init__(self, adapters: Dict[str, ProjectAdapter] = None, thinking=None):
         self.adapters = adapters or {}
         self.task_history: List[TaskResult] = []
+        self.thinking = thinking  # ThinkEngine实例
         
         # 注册默认适配器
         self._register_default_adapters()
@@ -238,19 +239,54 @@ class SupervisorAgent:
                 belief = opposition_result.get("opposing_belief", {})
                 severity = opposition_result.get("severity", "gentle")
                 
-                # 构建协商响应
-                negotiation_response = {
-                    "type": "opposition_negotiation",
-                    "status": "conflict_detected",
-                    "severity": severity,
-                    "message": opposition_result.get("suggested_response", ""),
-                    "opposing_belief": {
-                        "content": belief.get("content", ""),
-                        "confidence": belief.get("confidence", 0),
-                        "stance": belief.get("stance", "neutral")
-                    },
-                    "user_choice": None  # pending user response
-                }
+                # 尝试使用MAR增强反对
+                enhanced_result = None
+                if hasattr(self, 'thinking') and self.thinking:
+                    try:
+                        opposition.think_engine = self.thinking
+                        enhanced_result = opposition.enhanced_oppose_reflection(
+                            description, 
+                            belief
+                        )
+                    except Exception as e:
+                        logger.warning(f"Enhanced opposition failed: {e}")
+                
+                # 如果MAR增强成功，使用增强后的响应
+                if enhanced_result and enhanced_result.get("response_to_user"):
+                    logger.info(f"Supervisor: Using MAR-enhanced opposition")
+                    
+                    negotiation_response = {
+                        "type": "opposition_negotiation",
+                        "status": "conflict_detected",
+                        "severity": severity,
+                        "message": enhanced_result.get("response_to_user", ""),
+                        "opposing_belief": {
+                            "content": belief.get("content", ""),
+                            "confidence": belief.get("confidence", 0),
+                            "stance": belief.get("stance", "neutral")
+                        },
+                        "debate": {
+                            "judge_stance": enhanced_result.get("judge_stance"),
+                            "advocate_argument": enhanced_result.get("advocate_argument", "")[:200],
+                            "judge_reasoning": enhanced_result.get("judge_reasoning", "")[:200],
+                            "final_confidence": enhanced_result.get("final_confidence")
+                        },
+                        "user_choice": None
+                    }
+                else:
+                    # 回退到模板响应
+                    negotiation_response = {
+                        "type": "opposition_negotiation",
+                        "status": "conflict_detected",
+                        "severity": severity,
+                        "message": opposition_result.get("suggested_response", ""),
+                        "opposing_belief": {
+                            "content": belief.get("content", ""),
+                            "confidence": belief.get("confidence", 0),
+                            "stance": belief.get("stance", "neutral")
+                        },
+                        "user_choice": None
+                    }
                 
                 # 如果是strong级别，记录告警
                 if severity == "strong":

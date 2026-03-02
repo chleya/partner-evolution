@@ -226,6 +226,93 @@ class OppositionLayer:
         
         return response
     
+    # ============== MAR增强反对 (结构化辩论) ==============
+    
+    def enhanced_oppose_reflection(self, user_input: str, opposing_belief: Dict) -> Optional[Dict]:
+        """
+        使用MAR进行增强反对 - 结构化多角色辩论
+        
+        返回: 辩论结果 dict 或 None (如果Judge最终接受用户)
+        """
+        if not self.think_engine:
+            # 没有ThinkEngine，回退到模板
+            logger.warning("No ThinkEngine available, falling back to template")
+            return None
+        
+        belief_content = opposing_belief.get("assertion", opposing_belief.get("content", ""))
+        belief_confidence = opposing_belief.get("confidence", 0.7)
+        
+        # 构建辩论prompt
+        debate_prompt = self._build_debate_prompt(user_input, belief_content, belief_confidence)
+        
+        try:
+            # 调用MAR进行辩论
+            mar_result = self.think_engine.mar_reflect(
+                input_text=debate_prompt,
+                custom_roles=["Independent Advocate", "Devil's Advocate", "Realist Judge", "Truth-Seeker"]
+            )
+            
+            # 解析结果
+            if mar_result and mar_result.get("final_output"):
+                import json
+                try:
+                    # 尝试解析JSON
+                    debate_result = json.loads(mar_result["final_output"])
+                    
+                    # Judge立场判断
+                    judge_stance = debate_result.get("judge_final_stance", "oppose")
+                    
+                    if judge_stance in ["oppose", "compromise"]:
+                        # 仍然反对或妥协 - 返回辩论结果
+                        return {
+                            "judge_stance": judge_stance,
+                            "advocate_argument": debate_result.get("advocate_argument", ""),
+                            "devil_argument": debate_result.get("devil_argument", ""),
+                            "judge_reasoning": debate_result.get("judge_reasoning", ""),
+                            "final_confidence": debate_result.get("final_confidence", belief_confidence),
+                            "response_to_user": debate_result.get("response_to_user", ""),
+                            "trace_id": mar_result.get("trace_id")
+                        }
+                    else:
+                        # Judge最终接受用户 - 不反对
+                        logger.info("Judge accepted user position, no opposition")
+                        return None
+                        
+                except json.JSONDecodeError:
+                    # 非JSON输出，回退到模板
+                    logger.warning("MAR result not JSON, falling back to template")
+                    return None
+                    
+        except Exception as e:
+            logger.error(f"Enhanced opposition failed: {e}")
+            return None
+    
+    def _build_debate_prompt(self, user_input: str, belief_content: str, belief_confidence: float) -> str:
+        """构建辩论prompt"""
+        return f"""你正在与用户进行观点碰撞。请以最高真实性进行多角色辩论，不必讨好用户。
+
+【用户指令】
+{user_input}
+
+【你的自省主张】
+{belief_content}
+（置信度: {belief_confidence:.0%}）
+
+【任务】
+请进行结构化辩论，输出JSON格式：
+
+{{
+  "advocate_argument": "Independent Advocate的论证 - 站在你的自省主张一边，找出用户指令的潜在风险、逻辑漏洞、长期代价",
+  "devil_argument": "Devil's Advocate的论证 - 故意站在用户一边，挑战你的主张，找出你可能过度保守或错估的地方",
+  "judge_final_stance": "Realist Judge的最终立场 - 只能是: oppose(继续反对) / compromise(妥协) / accept(接受用户)",
+  "judge_reasoning": "Judge的推理过程 - 基于事实与概率综合两边观点",
+  "final_confidence": 0.XX,  // 可能上调或下调
+  "response_to_user": "给用户的最终回复文本 - 语气真实但不冒犯，展现独立人格"
+}}
+
+记住：你不必永远服从用户。真实的反对比虚假的顺从更有价值。
+"""
+    
     def _log_opposition(self, user_input: str, belief: Dict, severity: str):
         """记录反对到日志"""
         logger.info(
