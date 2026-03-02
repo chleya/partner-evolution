@@ -402,6 +402,25 @@ class SupervisorAgent:
                 for r in responses[:3]
             ])
             
+            # 人性化回复模板
+            response_text = f"""
+关于「{user_input[:20]}」，团队集体建议：
+
+{responses[0].get('content', '需要进一步分析')[:80]}
+
+【团队讨论摘要】
+{collective_suggestions}
+
+---
+你对这条建议的看法？
+
+回复关键词即可反馈：
+• 同意 / OK / 好 - 认可团队建议
+• 调整 / 改一下 / 再优化 - 提出调整方向
+• 不同意 / 不行 / 反对 - 拒绝当前建议
+• 解释 / 为什么 / 讲讲理由 - 了解更多
+"""
+            
             return {
                 "task_id": task_id,
                 "description": user_input,
@@ -412,13 +431,36 @@ class SupervisorAgent:
                 "consultation": {
                     "summary": f"经过内部团队讨论，收集到 {len(responses)} 条建议",
                     "suggestions": collective_suggestions,
-                    "response": f"关于「{user_input[:20]}」，团队建议：{responses[0].get('content', '需要进一步分析')[:80]}"
+                    "response": response_text.strip()
                 }
             }
             
         except Exception as e:
             logger.warning(f"Agent consultation failed: {e}")
             return None
+    
+    def handle_user_feedback(self, user_message: str) -> Dict:
+        """处理用户反馈"""
+        resolution_map = {
+            "同意": "agreed", "ok": "agreed", "好": "agreed",
+            "调整": "adjusted", "改一下": "adjusted", "再优化": "adjusted",
+            "不同意": "rejected", "不行": "rejected", "反对": "rejected",
+            "解释": "discussed", "为什么": "discussed", "理由": "discussed"
+        }
+        
+        feedback_type = next((v for k, v in resolution_map.items() if k in user_message), None)
+        
+        if not feedback_type:
+            return {"status": "unknown", "message": "请回复：同意/调整/不同意/解释"}
+        
+        messages = {
+            "agreed": "收到！团队建议已认可，记录下来。",
+            "adjusted": "收到！请告诉调整方向。",
+            "rejected": "收到不同意见，团队会考虑。",
+            "discussed": "让我解释一下..."
+        }
+        
+        return {"status": "success", "feedback_type": feedback_type, "message": messages.get(feedback_type)}
     
     async def get_status(self) -> Dict:
         """获取所有适配器状态"""
