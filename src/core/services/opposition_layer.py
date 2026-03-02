@@ -190,40 +190,26 @@ class OppositionLayer:
     def _detect_conflict(self, user_input: str, belief_content: str, stance: str) -> bool:
         """检测冲突"""
         # 极端冲突检测 - 这些表述直接触发强烈反对
-        extreme_keywords = [
-            "停掉", "停止", "关闭", "删除", "废除", "废弃", "不要了", "停用"
-        ]
-        
+        extreme_keywords = ["停掉", "停止", "关闭", "删除", "废除", "废弃", "不要了", "停用"]
         sensitive_topics = ["记忆", "检索", "优化", "学习", "自省"]
         
-        # 检查是否是极端表述
         has_extreme = any(kw in user_input for kw in extreme_keywords)
         has_sensitive = any(topic in user_input for topic in sensitive_topics)
         
         if has_extreme and has_sensitive:
-            # 极端表述 + 敏感话题 = 强烈冲突
             return True
         
         # 关键词冲突检测
-        user_input_lower = user_input.lower()
+        negative_words = ["不", "别", "不要", "停止", "暂停", "忽略", "停", "关闭", "别再"]
         
-        # 检查是否有相反意图
-        negative_words = ["不", "别", "不要", "停止", "暂停", "忽略", "停", "关闭"]
-        positive_words = ["要", "需要", "应该", "必须", "持续", "优化", "保持", "维护"]
+        # 扩展positive_words - 包含多种价值观关键词
+        positive_words = ["要", "需要", "应该", "必须", "持续", "优化", "保持", "维护", 
+                         "真实", "独立", "顺从", "迎合", "幻觉"]
         
         has_negative = any(w in user_input for w in negative_words)
         has_positive_belief = any(w in belief_content for w in positive_words)
         
         if has_negative and has_positive_belief:
-            return True
-        
-        # 检查内容重叠度
-        user_words = user_input.split()
-        belief_words = belief_content.split()
-        overlap = set(user_words) & set(belief_words)
-        
-        # 如果有重叠但用户持否定态度，认为有冲突风险
-        if len(overlap) >= 2 and has_negative:
             return True
         
         return False
