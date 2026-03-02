@@ -28,8 +28,33 @@ class A2AAgentResponder:
         """处理收到的消息"""
         if msg.type == "start_self_reflection":
             self._respond_to_self_reflection(msg)
+        elif msg.type == "user_task_consult":
+            self._respond_to_user_task(msg)
         elif msg.type == "challenge":
             self._respond_to_challenge(msg)
+    
+    def _respond_to_user_task(self, msg: A2AMessage):
+        """响应用户任务咨询"""
+        user_input = msg.payload.get("user_input", "")
+        
+        # 根据Agent角色给出建议
+        suggestions = {
+            "Evo-Swarm": "建议采用渐进式重构，先从核心模块开始，保持向后兼容",
+            "NeuralSite": "建议先优化数据库索引和缓存策略，再考虑架构调整",
+            "VisualCoT": "建议收集更多用户反馈数据，确保重构方向符合实际需求"
+        }
+        
+        suggestion = suggestions.get(self.agent_name, "需要进一步分析")
+        
+        response = A2AMessage(
+            from_agent=self.agent_name,
+            to_agent="all",
+            type="response",
+            payload={"content": suggestion},
+            task_id=msg.task_id
+        )
+        self.bus._publish(response)
+        logger.info(f"{self.agent_name} responded to user task: {suggestion[:30]}...")
     
     def _respond_to_self_reflection(self, msg: A2AMessage):
         """响应自省广播 - 带投票"""
