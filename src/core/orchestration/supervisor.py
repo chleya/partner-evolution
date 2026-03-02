@@ -225,6 +225,49 @@ class SupervisorAgent:
         task = self.analyze_task(description, context)
         logger.info(f"Supervisor: Analyzing task {task.id}, type={task.task_type.value}")
         
+        # ====== 反对层检查 ======
+        # 检查用户指令是否与信念冲突
+        try:
+            from src.core.services.opposition_layer import get_opposition_layer
+            opposition = get_opposition_layer()
+            opposition_result = opposition.check_opposition(description)
+            
+            if opposition_result.get("conflict"):
+                logger.info(f"Supervisor: Opposition triggered - {opposition_result.get('severity')}")
+                
+                belief = opposition_result.get("opposing_belief", {})
+                severity = opposition_result.get("severity", "gentle")
+                
+                # 构建协商响应
+                negotiation_response = {
+                    "type": "opposition_negotiation",
+                    "status": "conflict_detected",
+                    "severity": severity,
+                    "message": opposition_result.get("suggested_response", ""),
+                    "opposing_belief": {
+                        "content": belief.get("content", ""),
+                        "confidence": belief.get("confidence", 0),
+                        "stance": belief.get("stance", "neutral")
+                    },
+                    "user_choice": None  # pending user response
+                }
+                
+                # 如果是strong级别，记录告警
+                if severity == "strong":
+                    logger.warning(f"Strong opposition detected: {belief.get('content', '')[:50]}...")
+                
+                return {
+                    "task_id": task.id,
+                    "description": task.description,
+                    "task_type": task.task_type.value,
+                    "success": False,  # 被反对拦截，不是正常执行
+                    "results": [],
+                    "opposition": negotiation_response
+                }
+        except Exception as e:
+            logger.warning(f"Opposition check failed: {e}")
+        # ====== 反对层检查结束 ======
+        
         # 路由任务
         results = await self.route_task(task)
         
