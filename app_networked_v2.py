@@ -107,7 +107,19 @@ def auto_learn(topic: str) -> str:
     
     return summary
 
-# ============ UI ============
+# ============ LLM调用 ============
+def llm_call(prompt: str, system_prompt: str = "", temperature: float = 0.7, retry: int = 2) -> str:
+    """带重试的LLM调用"""
+    for attempt in range(retry):
+        try:
+            return llm.generate(prompt, system_prompt=system_prompt, temperature=temperature)
+        except Exception as e:
+            if attempt < retry - 1:
+                import time
+                time.sleep(2)
+                continue
+            return f"抱歉，我正在思考但遇到了问题: {str(e)[:100]}"
+    return "抱歉，思考失败"
 st.title("Partner-Evolution - 联网自我进化")
 
 # 状态栏
