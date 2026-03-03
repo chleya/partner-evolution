@@ -1,6 +1,6 @@
 """
-Recursive Refiner MVP 端到端测试
-验证完整工作流：解析 → 变异 → 评估 → 安全 → Git
+Recursive Refiner MVP E2E Test
+Simple ASCII output for Windows compatibility
 """
 import sys
 sys.path.insert(0, '.')
@@ -15,9 +15,8 @@ from src.core.services.recursive_refiner.ast_parser import ASTDiff
 from src.core.services.recursive_refiner.git_integration import get_evolution_git
 
 
-def test_astar_parser():
-    """测试AST解析"""
-    print("\n=== T1: AST解析测试 ===")
+def test_ast_parser():
+    print("\n=== T1: AST Parser Test ===")
     
     refiner = CodeRefiner()
     
@@ -35,32 +34,29 @@ def factorial(n):
     
     result = refiner.analyze(code)
     
-    print("[OK] 解析成功")
-    print(f"  函数数量: {result['functions']}")
-    print(f"  代码行数: {result['line_count']}")
+    print("[OK] Parse success")
+    print(f"  Functions: {result['functions']}")
+    print(f"  Lines: {result['line_count']}")
     
-    # 测试diff
+    # Test diff
     diff_gen = ASTDiff()
     original = "def foo():\n    return 1"
     modified = "def foo():\n    return 2"
     diff = diff_gen.generate_diff(original, modified)
-    print("[OK] Diff生成成功")
+    print("[OK] Diff generated")
     
     return True
 
 
 def test_mutation_engine():
-    """测试变异引擎"""
-    print("\n=== T2: 变异引擎测试 ===")
+    print("\n=== T2: Mutation Engine Test ===")
     
     engine = get_mutation_engine()
     
     code = "def add(a, b): return a + b"
-    
-    # 简单规则生成（无LLM）
     mutations = engine._rule_generate(code, "performance", 2)
     
-    print(f"[OK] 生成变体数: {len(mutations)}")
+    print(f"[OK] Generated {len(mutations)} mutations")
     for m in mutations:
         print(f"  - {m['version']}: {m['description']}")
     
@@ -68,85 +64,81 @@ def test_mutation_engine():
 
 
 def test_evaluation_loop():
-    """测试评估循环"""
-    print("\n=== T3: 评估循环测试 ===")
+    print("\n=== T3: Evaluation Loop Test ===")
     
     evaluator = get_evaluation_loop()
     
-    # 测试语法检查
+    # Test syntax check
     valid_code = "def test(): return 1"
     result = evaluator.evaluate(valid_code)
     
-    print(f"✓ 语法检查: {result['syntax_valid']}")
-    print(f"✓ 评分: {result['score']}")
+    print(f"[OK] Syntax valid: {result['syntax_valid']}")
+    print(f"[OK] Score: {result['score']}")
     
-    # 测试安全检查
+    # Test security check
     dangerous_code = "eval('os.system(\"ls\")')"
     sec_result = evaluator._check_security(dangerous_code)
-    print(f"✓ 安全检测: 发现{len(sec_result['issues'])}个问题")
+    print(f"[OK] Security issues found: {len(sec_result['issues'])}")
     
     return True
 
 
 def test_safety_sandbox():
-    """测试安全沙箱"""
-    print("\n=== T4: 安全沙箱测试 ===")
+    print("\n=== T4: Safety Sandbox Test ===")
     
     sandbox = get_safety_sandbox()
     
-    # 重置
+    # Reset
     sandbox.reset()
     
-    # 测试状态
-    print(f"✓ 初始状态: {sandbox.state.value}")
+    # Test state
+    print(f"[OK] Initial state: {sandbox.state.value}")
     
-    # 测试停止暗号
+    # Test stop signal
     sandbox.start_evolution()
     has_stop = sandbox.check_stop_signal("EVOLVE_STOP")
-    print(f"✓ 停止暗号检测: {has_stop}")
+    print(f"[OK] Stop signal detected: {has_stop}")
     
-    # 测试代数限制
+    # Test generation limit
     for i in range(12):
         sandbox.next_generation()
     
     can_continue = sandbox.can_continue()
-    print(f"✓ 10代后继续: {can_continue} (应为False)")
+    print(f"[OK] Can continue after 10 gen: {can_continue} (should be False)")
     
-    # 获取状态
+    # Get status
     status = sandbox.get_status()
-    print(f"✓ 当前代数: {status['generation']}/{status['max_generations']}")
+    print(f"[OK] Generation: {status['generation']}/{status['max_generations']}")
     
     return True
 
 
 def test_git_integration():
-    """测试Git集成"""
-    print("\n=== T5: Git集成测试 ===")
+    print("\n=== T5: Git Integration Test ===")
     
     git_manager = get_evolution_git()
     
-    # 检查是否是git仓库
+    # Check if git repo
     is_repo = git_manager.git.is_git_repo()
-    print(f"✓ Git仓库: {is_repo}")
+    print(f"[OK] Git repo: {is_repo}")
     
     if is_repo:
         status = git_manager.git.get_status()
-        print(f"  当前分支: {status['branch']}")
-        print(f"  有改动: {status['has_changes']}")
+        print(f"  Current branch: {status['branch']}")
+        print(f"  Has changes: {status['has_changes']}")
     
     return True
 
 
 def test_full_pipeline():
-    """完整流程测试"""
-    print("\n=== 完整流程测试 ===")
+    print("\n=== Full Pipeline Test ===")
     
-    # 模拟代码优化流程
+    # Simulate code optimization
     refiner = CodeRefiner()
     evaluator = get_evaluation_loop()
     sandbox = get_safety_sandbox()
     
-    # 原始代码
+    # Original code
     original_code = """
 def slow_sum(numbers):
     total = 0
@@ -155,37 +147,36 @@ def slow_sum(numbers):
     return total
 """
     
-    # 1. 解析
+    # 1. Parse
     analysis = refiner.analyze(original_code)
-    print(f"✓ 解析: {analysis['functions'][0]['name']}")
+    print(f"[OK] Parse: {analysis['functions'][0]['name']}")
     
-    # 2. 评估
+    # 2. Evaluate
     eval_result = evaluator.evaluate(original_code)
-    print(f"✓ 评估: score={eval_result['score']}")
+    print(f"[OK] Evaluate: score={eval_result['score']}")
     
-    # 3. 安全检查
+    # 3. Safety check
     sandbox.start_evolution()
     can_run = sandbox.can_continue()
-    print(f"✓ 安全: 可继续={can_run}")
+    print(f"[OK] Safety: can_continue={can_run}")
     
-    print("\n=== 所有测试通过! ===")
+    print("\n=== ALL TESTS PASSED ===")
     
     return True
 
 
 def main():
-    """主测试函数"""
     print("=" * 50)
-    print("  Recursive Refiner MVP 端到端测试")
+    print("  Recursive Refiner MVP E2E Test")
     print("=" * 50)
     
     tests = [
-        ("AST解析", test_astar_parser),
-        ("变异引擎", test_mutation_engine),
-        ("评估循环", test_evaluation_loop),
-        ("安全沙箱", test_safety_sandbox),
-        ("Git集成", test_git_integration),
-        ("完整流程", test_full_pipeline),
+        ("AST Parser", test_ast_parser),
+        ("Mutation Engine", test_mutation_engine),
+        ("Evaluation Loop", test_evaluation_loop),
+        ("Safety Sandbox", test_safety_sandbox),
+        ("Git Integration", test_git_integration),
+        ("Full Pipeline", test_full_pipeline),
     ]
     
     passed = 0
@@ -196,11 +187,11 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"✗ {name} 失败: {e}")
+            print(f"[FAIL] {name}: {e}")
             failed += 1
     
     print("\n" + "=" * 50)
-    print(f"  测试结果: {passed} 通过, {failed} 失败")
+    print(f"  Result: {passed} passed, {failed} failed")
     print("=" * 50)
     
     return failed == 0
