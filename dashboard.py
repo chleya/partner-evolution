@@ -21,7 +21,7 @@ app = Flask(__name__)
 def init_modules():
     mirror = get_mirror()
     teacher = get_teacher()
-    forking = get_focking_manager()
+    forking = get_forking_manager()
     builder = get_recursive_refiner()
     safety = get_safety_sandbox()
     scheduler = get_evolution_scheduler(
