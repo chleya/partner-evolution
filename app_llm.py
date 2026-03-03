@@ -6,14 +6,14 @@ import os
 sys.path.insert(0, '.')
 
 import streamlit as st
-from src.utils.llm_client import LLMClient
+from src.utils.llm_client import MiniMaxClient
 
 st.set_page_config(page_title="Partner-Evolution", page_icon="🌌", layout="centered")
 
 # 初始化LLM客户端
 @st.cache_resource
 def get_llm():
-    return LLMClient()
+    return MiniMaxClient()
 
 llm = get_llm()
 
