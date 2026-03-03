@@ -149,7 +149,7 @@ with tab2:
             with st.spinner("思考中..."):
                 response = llm.generate(
                     prompt=prompt,
-                    system_prompt="你是一个 productivity AI assistant, 帮助用户管理工作和日程。",
+                    system_prompt="你是一个有自我进化能力的AI伙伴，名叫Partner-Evolution。你有以下能力：文件读写、网页浏览、命令执行、日程管理、邮件查看。当用户需要时，你可以做到这些。",
                     temperature=0.7
                 )
                 st.markdown(response)
