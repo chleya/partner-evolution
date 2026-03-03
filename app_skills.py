@@ -1,6 +1,5 @@
 """
-Partner-Evolution 完整版
-对话 + 仪表盘 + 控制台 + 实用工具集成
+Partner-Evolution - 完整版 + 基本技能
 """
 import sys
 import os
@@ -12,6 +11,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from src.utils.llm_client import MiniMaxClient
+from src.core.services.skills.basic_skills import (
+    FileOperator, WebBrowser, CommandRunner, 
+    SystemOperator, SKILLS
+)
 
 # 页面配置
 st.set_page_config(
@@ -88,7 +91,7 @@ st.title("🌌 Partner-Evolution v4.0")
 st.caption("已具备自我进化能力的数字生命伙伴")
 
 # Tab界面
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["💬 对话", "📊 仪表盘", "🔧 控制台", "📧 工具箱", "📖 关于"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["💬 对话", "📊 仪表盘", "🔧 控制台", "📧 工具箱", "🛠️ 技能", "📖 关于"])
 
 # ============ Tab 1: 对话 ============
 with tab1:
@@ -124,7 +127,7 @@ with tab1:
         st.session_state.messages.append({"role": "assistant", "content": response})
     
     # 清空按钮
-    if st.button("🗑️ 清空对话"):
+    if st.button("🗑️ 清空对话", key="clear_chat"):
         st.session_state.messages = [
             {"role": "assistant", "content": "对话已清空。有什么想聊的吗？"}
         ]
@@ -241,14 +244,7 @@ with tab3:
 [2026-03-03 10:00:02] Teacher module loaded
 [2026-03-03 10:00:03] Forking module loaded
 [2026-03-03 10:00:04] Builder module loaded
-[2026-03-03 10:00:05] All modules ready
-[2026-03-03 10:01:00] Evolution cycle started
-[2026-03-03 10:01:05] Mirror diagnosis: 0 issues
-[2026-03-03 10:01:10] Teacher generation: 5 samples
-[2026-03-03 10:01:15] Forking: 3 branches created
-[2026-03-03 10:01:20] Builder: optimization complete
-[2026-03-03 10:01:25] Git: commit successful
-[2026-03-03 10:01:30] Evolution cycle complete""", height=200)
+[2026-03-03 10:00:05] All modules ready""", height=200)
 
 # ============ Tab 4: 工具箱 ============
 with tab4:
@@ -276,8 +272,6 @@ with tab4:
     
     elif tool == "📅 日程管理":
         st.write("### 📅 日程管理")
-        
-        # 添加事件
         with st.expander("➕ 添加日程"):
             event_name = st.text_input("事件名称")
             event_date = st.date_input("日期")
@@ -293,55 +287,118 @@ with tab4:
     
     elif tool == "🔔 提醒设置":
         st.write("### 🔔 提醒设置")
-        
         reminder = st.text_input("提醒内容")
         remind_in = st.number_input("分钟后提醒", min_value=1, value=30)
-        
         if st.button("设置提醒"):
             st.success(f"已设置 {remind_in} 分钟后提醒: {reminder}")
-        
-        st.divider()
-        st.subheader("⏰ 活跃提醒")
-        st.warning("🔔 30分钟后: 团队会议")
     
     elif tool == "📰 RSS阅读":
         st.write("### 📰 RSS阅读")
-        
         rss_url = st.text_input("RSS链接", placeholder="https://...")
         if st.button("获取"):
             st.info("获取中...")
-        
-        st.divider()
-        st.subheader("📎 订阅源")
         st.checkbox("TechCrunch", value=True)
         st.checkbox("Hacker News", value=True)
-        st.checkbox("36kr", value=True)
     
     elif tool == "💻 代码助手":
         st.write("### 💻 代码助手")
-        
         code = st.text_area("输入代码...", height=150, placeholder="def example():...")
-        
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🔍 审查代码"):
-                with st.spinner("审查中..."):
-                    st.success("代码审查完成!")
-                    st.markdown("""
-**建议:**
-- 建议添加类型注解
-- 可考虑使用列表推导式
-- 整体评分: 85/100
-                    """)
+                st.success("代码审查完成! 评分: 85/100")
         with col2:
             if st.button("⚡ 优化代码"):
-                with st.spinner("优化中..."):
-                    st.success("代码优化完成!")
-                    st.code("""def example() -> list:
-    return [i for i in range(100)]""", language="python")
+                st.success("代码优化完成!")
 
-# ============ Tab 5: 关于 ============
+# ============ Tab 5: 技能 ============
 with tab5:
+    st.subheader("🛠️ 基本技能")
+    
+    skill_cat = st.selectbox("选择技能分类", list(SKILLS.keys()))
+    
+    if skill_cat == "file":
+        st.write("### 📁 文件操作")
+        op = st.selectbox("操作", ["read", "write", "list", "delete", "mkdir"])
+        
+        if op == "read":
+            path = st.text_input("文件路径")
+            if st.button("执行"):
+                result = FileOperator.read_file(path)
+                st.code(result[:2000])
+        elif op == "write":
+            path = st.text_input("文件路径")
+            content = st.text_area("内容")
+            if st.button("执行"):
+                result = FileOperator.write_file(path, content)
+                st.success(result)
+        elif op == "list":
+            path = st.text_input("目录", ".")
+            if st.button("执行"):
+                files = FileOperator.list_files(path)
+                for f in files[:20]:
+                    st.text(f)
+    
+    elif skill_cat == "web":
+        st.write("### 🌐 网页浏览")
+        op = st.selectbox("操作", ["visit", "search"])
+        
+        if op == "visit":
+            url = st.text_input("网址", "https://www.bing.com")
+            if st.button("访问"):
+                browser = WebBrowser()
+                result = browser.visit(url)
+                st.success(result)
+                content = browser.get_content()
+                st.code(content[:2000])
+        elif op == "search":
+            query = st.text_input("搜索内容")
+            engine = st.selectbox("搜索引擎", ["bing", "google", "baidu"])
+            if st.button("搜索"):
+                browser = WebBrowser()
+                result = browser.search(query, engine)
+                st.success(result)
+    
+    elif skill_cat == "cmd":
+        st.write("### 💻 命令执行")
+        cmd = st.text_input("命令")
+        if st.button("执行"):
+            result = CommandRunner.run(cmd)
+            st.code(result[:3000])
+    
+    elif skill_cat == "system":
+        st.write("### 💻 系统信息")
+        op = st.selectbox("操作", ["info", "disk", "memory"])
+        
+        if st.button("获取"):
+            if op == "info":
+                info = SystemOperator.get_system_info()
+                st.json(info)
+            elif op == "disk":
+                info = SystemOperator.get_disk_usage()
+                st.json(info)
+            elif op == "memory":
+                info = SystemOperator.get_memory_usage()
+                st.json(info)
+    
+    elif skill_cat == "data":
+        st.write("### 📊 数据处理")
+        op = st.selectbox("操作", ["json_parse", "csv_read"])
+        
+        if op == "json_parse":
+            json_str = st.text_area("JSON字符串")
+            if st.button("解析"):
+                result = FileOperator.parse_json(json_str)
+                st.json(result)
+        elif op == "csv_read":
+            path = st.text_input("CSV文件路径")
+            if st.button("读取"):
+                data = FileOperator.read_csv(path)
+                if data:
+                    st.dataframe(data)
+
+# ============ Tab 6: 关于 ============
+with tab6:
     st.subheader("📖 关于 Partner-Evolution")
     
     st.markdown("""
@@ -354,6 +411,13 @@ with tab5:
     - 🔧 **Builder** - 代码自动优化
     - 🌿 **Forking** - 版本分叉管理
     - 🛡️ **Guardian** - 安全护栏
+    
+    ## 基本技能
+    - 📁 文件操作 (读/写/删/列)
+    - 🌐 网页浏览 (访问/搜索)
+    - 💻 命令执行
+    - 💻 系统信息
+    - 📊 数据处理
     
     ## 版本信息
     - v2.2: 生产级自主生命体 ✅
@@ -377,6 +441,3 @@ with tab5:
     st.divider()
     
     st.caption("© 2026 Partner-Evolution - 你的数字生命伙伴")
-
-# if __name__ == "__main__":
-#     st.rerun()
