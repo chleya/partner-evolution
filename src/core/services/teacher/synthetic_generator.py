@@ -138,7 +138,7 @@ class SyntheticDataGenerator:
         """
         samples = []
         
-        if not self.llm or not extract_ insights:
+        if not self.llm or not extract_insights:
             return samples
         
         # 提取成功的对话模式

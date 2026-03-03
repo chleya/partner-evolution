@@ -266,7 +266,7 @@ class Mirror:
             "estimated_impact": "medium"
         }
     
-    def联动_teacher_generate_sample(self, root_cause: RootCause) -> Dict:
+    def link_teacher_generate_sample(self, root_cause: RootCause) -> Dict:
         """
         与Teacher联动 - 生成黄金样本
         
